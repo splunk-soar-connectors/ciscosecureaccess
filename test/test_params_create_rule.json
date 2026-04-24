@@ -1,0 +1,8 @@
+{
+  "rule_name": "Test_Rule-1",
+  "rule_action": "allow",
+  "rule_conditions_json": "[{\"attributeName\":\"umbrella.destination.all\",\"attributeValue\":true,\"attributeOperator\":\"=\"},{\"attributeName\":\"umbrella.source.all\",\"attributeValue\":true,\"attributeOperator\":\"=\"}]",
+  "rule_settings_json": "[{\"settingName\":\"umbrella.default.traffic\",\"settingValue\":\"PUBLIC_INTERNET\"}]",
+  "rule_description": "Test rule created by SOAR",
+  "rule_is_enabled": true
+}

@@ -1,0 +1,4 @@
+{
+  "client_id": "your-client-id-or-use-env",
+  "client_secret": "your-client-secret-or-use-env"
+}

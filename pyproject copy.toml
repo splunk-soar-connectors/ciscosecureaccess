@@ -3,7 +3,7 @@ name = "ciscosecureaccess"
 version = "1.0.0"
 description = "sse"
 license = "Copyright (c) 2026 Splunk Inc."
-requires-python = ">=3.13,<3.14"
+requires-python = ">=3.13, <3.15"
 authors = [ "Splunk"
 ]
 dependencies = [
@@ -22,9 +22,6 @@ soarapps-test = [
 
 [tool.soar.app]
 main_module = "src.app:app"
-
-[tool.pytest.ini_options]
-pythonpath = ["."]
 
 ### YOU SHOULD NOT NEED TO TOUCH ANYTHING BELOW THIS LINE ###
 
@@ -100,17 +97,8 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
     "S",
     "PLC0415",  # Local imports in tests are intentional
 ]
-"src/app.py" = [
-    "PT",  # Disable pytest rules for connector modules (not test files)
-]
-"src/params.py" = [
-    "PT",
-]
-"src/outputs.py" = [
-    "PT",
-]
-"src/sse_api_client.py" = [
-    "PT",
+"src/**/*" = [
+    "PT",  # Disable pytest rules for src files
 ]
 
 [tool.ruff.lint.pyupgrade]

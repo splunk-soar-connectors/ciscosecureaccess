@@ -1,0 +1,5 @@
+{
+    "name": "SOAR test blocked destination list",
+    "access": "block",
+    "destinations_json": "[{\"destination\":\"www.blocked_test.com\",\"type\":\"domain\"}]"
+}

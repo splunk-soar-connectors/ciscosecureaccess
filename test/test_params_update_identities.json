@@ -1,0 +1,4 @@
+{
+  "type": "device",
+  "identities_json": "[  {    \"key\": \"123e4567-e89b-12d3-a456-426614174001\",    \"label\": \"Device Alpha\",    \"status\": \"active\",    \"authName\": \"auth_device_alpha\"  }]"
+}
