@@ -108,7 +108,26 @@ def mock_client():
         "success": True,
         "message": "Network device removed",
     }
-    client.ListApiKeys.return_value = {"name": "test-key"}
+    client.ListApiKeys.return_value = {
+        "message": "OK",
+        "offset": 0,
+        "limit": 100,
+        "total": 1,
+        "keys": [
+            {
+                "id": "test-key",
+                "name": "test-key",
+                "creatorName": "Test User",
+                "creatorEmail": "test@example.com",
+                "createdAt": "2024-01-01T00:00:00Z",
+                "expireAt": "2025-01-01T00:00:00Z",
+                "modifiedAt": "2024-01-01T00:00:00Z",
+                "lastUsedAt": "2024-06-01T00:00:00Z",
+                "lastRefreshedAt": "2024-06-01T00:00:00Z",
+                "scopes": ["admin"],
+            }
+        ],
+    }
     client.ListVirtualAppliances.return_value = []
     client.ListSites.return_value = []
     client.ListDestinationLists.return_value = []

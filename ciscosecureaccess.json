@@ -335,7 +335,7 @@
         {
             "action": "list api keys",
             "identifier": "list_api_keys",
-            "description": "List SSE API Keys",
+            "description": "List all API keys",
             "type": "generic",
             "read_only": true,
             "parameters": {},
@@ -469,7 +469,7 @@
         {
             "action": "list virtual appliances",
             "identifier": "list_virtual_appliances",
-            "description": "List SSE Virtual Appliances",
+            "description": "List all virtual appliances",
             "type": "generic",
             "read_only": true,
             "parameters": {},
@@ -624,7 +624,7 @@
         {
             "action": "list sites",
             "identifier": "list_sites",
-            "description": "List all Sites in the organization (fetches all pages).",
+            "description": "List all Sites in the organization",
             "type": "generic",
             "read_only": true,
             "parameters": {},
@@ -2580,7 +2580,7 @@
         {
             "action": "list roaming computers",
             "identifier": "list_roaming_computers",
-            "description": "List Roaming Computers.",
+            "description": "List all roaming computers",
             "type": "generic",
             "read_only": true,
             "parameters": {},

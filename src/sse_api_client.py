@@ -234,14 +234,64 @@ class SSE_API:
             "data": all_data,
         }
 
+    def QueryAllPagesOffset(
+        self,
+        scope,
+        end_point,
+        operation=GET,
+        limit=100,
+        data_key="data",
+    ):
+        """
+        GET all pages of an offset/limit paged endpoint and return the combined result.
+        Response shape: { data_key: [...], total: N, offset: ..., limit: ..., ... }.
+        """
+        all_data = []
+        offset = 0
+        total = None
+        last_response = {}
+        while True:
+            res = self.Query(
+                scope=scope,
+                end_point=end_point,
+                operation=operation,
+                params={"offset": offset, "limit": limit},
+            )
+            parsed = self.ParseJsonResponse(res)
+            last_response = parsed if isinstance(parsed, dict) else {}
+            chunk = last_response.get(data_key) or []
+            if not isinstance(chunk, list):
+                chunk = [chunk] if chunk is not None else []
+            all_data.extend(chunk)
+            total = last_response.get("total")
+            if total is not None:
+                total = int(total)
+            if total is not None:
+                if offset + len(chunk) >= total:
+                    break
+            elif len(chunk) < limit:
+                break
+            offset += limit
+        return {
+            **last_response,
+            data_key: all_data,
+            "offset": 0,
+            "limit": limit,
+            "total": total if total is not None else len(all_data),
+        }
+
     def ParseJsonResponse(self, res: requests.Response):
         json_response = res.json()
         return json_response
 
     def ListApiKeys(self):
-        res = self.Query(scope="admin", end_point="apiKeys", operation=GET)
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.QueryAllPagesOffset(
+            scope="admin",
+            end_point="apiKeys",
+            operation=GET,
+            limit=100,
+            data_key="keys",
+        )
 
     def ListNetworkDevices(self):
         res = self.Query(scope="deployments", end_point="networkdevices", operation=GET)
@@ -273,7 +323,7 @@ class SSE_API:
 
     def ListSites(self):
         """
-        List all Sites in the organization (all pages).
+        List all Sites in the organization.
         GET deployments/v2/sites. Requires deployments.sites:read.
         See: https://developer.cisco.com/docs/cloud-security/list-sites/
         """
@@ -287,11 +337,14 @@ class SSE_API:
         return res["data"]
 
     def ListVirtualAppliances(self):
-        res = self.Query(
-            scope="deployments", end_point="virtualappliances", operation=GET
+        res = self.QueryAllPages(
+            scope="deployments",
+            end_point="virtualappliances",
+            operation=GET,
+            limit=100,
+            response_is_array=True,
         )
-        data = self.ParseJsonResponse(res)
-        return data
+        return res["data"]
 
     def ListVPNSessions(self):
         res = self.QueryAllPages(
@@ -301,11 +354,14 @@ class SSE_API:
         return data
 
     def ListRoamingComputers(self):
-        res = self.Query(
-            scope="deployments", end_point="roamingcomputers", operation=GET
+        res = self.QueryAllPages(
+            scope="deployments",
+            end_point="roamingcomputers",
+            operation=GET,
+            limit=100,
+            response_is_array=True,
         )
-        data = self.ParseJsonResponse(res)
-        return data
+        return res["data"]
 
     def GetRoamingComputer(self, device_id):
         """GET deployments/v2/roamingcomputers/{deviceId}. Returns posture/security status for the device."""

@@ -17,7 +17,6 @@ from soar_sdk.app import App
 from soar_sdk.asset import BaseAsset
 from soar_sdk.asset import AssetField
 from soar_sdk.params import Params
-from soar_sdk.logging import getLogger
 
 from .params import (
     AddToDestinationListParams,
@@ -78,8 +77,6 @@ from .outputs import (
     SetSWGOverrideDeviceSettingsOutput,
     DeleteSWGOverrideDeviceSettingsOutput,
 )
-
-logger = getLogger()
 
 # Pagination / validation limits
 MAX_LIMIT_NETWORK_TUNNEL_GROUPS = 200
@@ -246,9 +243,6 @@ def flatten_field(obj_list, field_name, separator="."):
         nested_dict = obj.pop(field_name)
         for key, value in nested_dict.items():
             if key in obj:
-                logger.warning(
-                    "can't flatten_field %s because object already has key", key
-                )
                 continue
             obj[key] = value
     return obj_list
@@ -301,13 +295,8 @@ def test_connectivity(asset: Asset) -> None:
     Get a token to ensure connectivity, and valid configuration.
     https://developer.cisco.com/docs/cloud-security/create-authorization-token/
     """
-    logger.info(f"testing connectivity against {asset.base_url}")
     client = asset.get_client()
-    logger.info("created SSE API client successfully")
-    logger.info("querying valid ioa platforms to ensure connectivity")
-    if client.GetToken():
-        logger.info("Connection success")
-    else:
+    if not client.GetToken():
         raise Exception("Unable to get auth token")
 
 
@@ -317,10 +306,8 @@ def list_managed_devices(params: Params, asset: Asset) -> ListManagedDevicesOutp
     List all valid IOA platforms.
     https://developer.cisco.com/docs/cloud-security/list-network-devices/
     """
-    logger.info("listing valid IOA platforms")
     client = asset.get_client()
     devices = client.ListNetworkDevices()
-    logger.info(f"got devices {devices}")
     # Parse the devices list
     return ListManagedDevicesOutput(devices=devices)
 
@@ -334,10 +321,8 @@ def delete_managed_device(
     DELETE deployments/v2/networkdevices/{originId}. Requires deployments.networkdevices:write.
     https://developer.cisco.com/docs/cloud-security/delete-network-device/
     """
-    logger.info("deleting network device by origin_id=%s", params.origin_id)
     client = asset.get_client()
     data = client.DeleteNetworkDevice(params.origin_id)
-    logger.info("delete_managed_device result %s", data)
     return DeleteManagedDeviceOutput(
         success=data.get("success", True), message=data.get("message")
     )
@@ -352,23 +337,19 @@ def get_network_device(
     GET deployments/v2/networkdevices/{originId}. Requires deployments.networkdevices:read.
     https://developer.cisco.com/docs/cloud-security/get-network-device/
     """
-    logger.info("Getting network device origin_id=%s", params.origin_id)
     client = asset.get_client()
     data = client.GetNetworkDevice(params.origin_id)
-    logger.info("get_network_device result originId=%s", data.get("originId"))
     return _output_from_api_data(GetNetworkDeviceOutput, data)
 
 
 @app.action()
 def list_api_keys(params: Params, asset: Asset) -> ListAPIKeysOutput:
     """
-    List SSE API Keys
+    List all API keys
     https://developer.cisco.com/docs/cloud-security/list-api-keys/
     """
-    logger.info("Listing API Keys")
     client = asset.get_client()
     api_keys = client.ListApiKeys()
-    logger.info(f"got API Keys {api_keys}")
     # TODO Parse API Keys list
     if isinstance(api_keys, dict) and "keys" in api_keys:
         return ListAPIKeysOutput(
@@ -386,10 +367,9 @@ def list_virtual_appliances(
     params: Params, asset: Asset
 ) -> ListVirtualAppliancesOutput:
     """
-    List SSE Virtual Appliances
+    List all virtual appliances
     https://developer.cisco.com/docs/cloud-security/list-virtual-appliances/
     """
-    logger.info("Listing Virtual Appliances")
     client = asset.get_client()
     virtual_appliances = client.ListVirtualAppliances()
     # Flatten `state` and `settings` dicts into scalar/list fields for SOAR outputs
@@ -411,7 +391,6 @@ def list_virtual_appliances(
             va["lastSyncTime"] = settings.get("lastSyncTime")
             # remove nested object to avoid schema/type issues
             va.pop("settings", None)
-    logger.info(f"got Virtual Appliances {virtual_appliances}")
     output = ListVirtualAppliancesOutput(virtualAppliances=virtual_appliances)
     return output
 
@@ -419,16 +398,14 @@ def list_virtual_appliances(
 @app.action()
 def list_sites(params: Params, asset: Asset) -> ListSitesOutput:
     """
-    List all Sites in the organization (fetches all pages).
+    List all Sites in the organization.
     GET deployments/v2/sites. Requires deployments.sites:read.
     https://developer.cisco.com/docs/cloud-security/list-sites/
     """
-    logger.info("Listing sites (all pages)")
     client = asset.get_client()
     sites = client.ListSites()
     if not isinstance(sites, list):
         sites = [sites] if sites is not None else []
-    logger.info("got sites count=%s", len(sites))
     return ListSitesOutput(sites=sites)
 
 
@@ -440,10 +417,8 @@ def list_destination_lists(
     List Destination Lists
     https://developer.cisco.com/docs/cloud-security/get-destination-lists/
     """
-    logger.info("Listing Destination Lists")
     client = asset.get_client()
     destination_lists = client.ListDestinationLists()
-    logger.info(f"got Destination Lists {destination_lists}")
     destination_lists = flatten_field(
         destination_lists, "meta"
     )  # flatten meta field into meta.* fields
@@ -482,7 +457,6 @@ def create_destination_list(
     if destinations:
         body["destinations"] = destinations
 
-    logger.info("Creating destination list name=%r access=%s", name, params.access)
     client = asset.get_client()
     raw = client.CreateDestinationList(body)
     if not isinstance(raw, dict):
@@ -492,7 +466,6 @@ def create_destination_list(
         raise ValueError("Unexpected API response data for create destination list")
     if data.get("meta") is not None:
         data = flatten_field([data], "meta")[0]
-    logger.info("Created destination list id=%s", data.get("id"))
     return CreateDestinationListOutput(destinationList=data)
 
 
@@ -504,7 +477,6 @@ def add_to_destination_list(
     Add to Destination List (one destination and optional comment per run).
     https://developer.cisco.com/docs/cloud-security/add-destinations-to-destination-list/
     """
-    logger.info("Adding to Destination List")
     client = asset.get_client()
     destination_list_id = (
         params.destination_list_id
@@ -531,13 +503,6 @@ def add_to_destination_list(
     if added_row and added_row.get("id") is not None:
         added_id = str(added_row["id"])
         destination_list = {**destination_list, "destinations": [added_row]}
-    else:
-        logger.warning(
-            "Could not resolve added destination entry id for list %s; "
-            "use list_destination_lists with list_destinations=true to inspect rows",
-            destination_list_id,
-        )
-    logger.info(f"added to Destination List {destination_list}")
     return AddToDestinationListOutput(
         destinationList=destination_list, addedDestinationId=added_id
     )
@@ -551,7 +516,6 @@ def remove_destinations_from_list(
     Remove from Destination List
     https://developer.cisco.com/docs/cloud-security/delete-destinations-from-destination-list/
     """
-    logger.info("Removing from Destination List")
     client = asset.get_client()
     destination_list_id = (
         params.destination_list_id
@@ -564,7 +528,6 @@ def remove_destinations_from_list(
     destination_list_response = client.RemoveDestinationsFromList(
         destination_list_id, destination_ids
     )
-    logger.info(f"removed from Destination List {destination_list_response}")
     return RemoveDestinationsFromListOutput(destinationList=destination_list_response)
 
 
@@ -574,11 +537,9 @@ def get_domain_status(params: GetDomainParams, asset: Asset) -> GetDomainStatusO
     Get Domain Status
     https://developer.cisco.com/docs/cloud-security/get-domain-status-and-categorization/
     """
-    logger.info("Getting Domain Status")
     client = asset.get_client()
     domain = params.domain
     domain_status_response = client.GetDomainStatus(domain)
-    logger.info(f"got Domain Status {domain_status_response}")
     domain_status_object = domain_status_response[
         domain
     ]  # get the domain status object
@@ -597,11 +558,9 @@ def get_domain_risk_score(
     Get Domain Risk Score
     https://developer.cisco.com/docs/cloud-security/get-risk-score-for-domain/
     """
-    logger.info("Getting Domain Risk Score")
     client = asset.get_client()
     domain = params.domain
     domain_risk_score_response = client.GetDomainRiskScore(domain)
-    logger.info(f"got Domain Risk Score {domain_risk_score_response}")
     return GetDomainRiskScoreOutput(**domain_risk_score_response)
 
 
@@ -611,11 +570,9 @@ def get_passive_dns(params: GetDomainParams, asset: Asset) -> GetPassiveDNSOutpu
     Get Passive DNS
     https://developer.cisco.com/docs/cloud-security/get-resource-records-for-name/
     """
-    logger.info("Getting Passive DNS")
     client = asset.get_client()
     domain = params.domain
     passive_dns_response = client.GetPassiveDNS(domain)
-    logger.info(f"got Passive DNS {passive_dns_response}")
     return GetPassiveDNSOutput(passive_dns_records=passive_dns_response)
 
 
@@ -625,10 +582,8 @@ def list_vpn_sessions(params: Params, asset: Asset) -> ListVPNSessionsOutput:
     List VPN Sessions
     https://developer.cisco.com/docs/cloud-security/list-vpn-connections/
     """
-    logger.info("Listing VPN Sessions")
     client = asset.get_client()
     vpn_sessions = client.ListVPNSessions()
-    logger.info(f"got VPN Sessions {vpn_sessions}")
     return ListVPNSessionsOutput(vpn_sessions=vpn_sessions)
 
 
@@ -640,14 +595,12 @@ def terminate_vpn_session(
     Terminate VPN Session
     https://developer.cisco.com/docs/cloud-security/disconnect-vpn-users/
     """
-    logger.info("Terminating VPN Session")
     usernames = _parse_comma_list(params.usernames)
     sessions = _parse_comma_list(params.sessions)
     client = asset.get_client()
     terminate_vpn_session_response = client.TerminateVPNSession(
         params.profile_name, params.region, sessions, usernames
     )
-    logger.info(f"terminated VPN Session {terminate_vpn_session_response}")
     return TerminateVPNSessionOutput(**terminate_vpn_session_response)
 
 
@@ -657,10 +610,8 @@ def list_identities(params: ListIdentitiesParams, asset: Asset) -> ListIdentitie
     List Identities
     https://developer.cisco.com/docs/cloud-security/list-identities/
     """
-    logger.info("Listing Identities")
     client = asset.get_client()
     identities = client.ListIdentities(params.type)
-    logger.info(f"got Identities {identities}")
     return ListIdentitiesOutput(identities=identities)
 
 
@@ -673,7 +624,6 @@ def update_identities(
     PUT /identities/registrations/{type}. Pass 1-250 identity objects as JSON array in identities_json.
     https://developer.cisco.com/docs/cloud-security/update-identities/
     """
-    logger.info("Updating Identities")
     client = asset.get_client()
     identity_type = params.type.strip().lower()
     if identity_type not in ("device", "securitygrouptag"):
@@ -686,7 +636,6 @@ def update_identities(
     if len(identities_list) < 1 or len(identities_list) > MAX_IDENTITIES_UPDATE:
         raise ValueError("identities_json must contain 1-250 items")
     data = client.UpdateIdentities(identity_type, identities_list)
-    logger.info(f"Update Identities result {data}")
     return UpdateIdentitiesOutput(success=data.get("success"))
 
 
@@ -699,10 +648,8 @@ def list_certificates_for_device(
     GET /ztna/users/{userId}/devices/{deviceId}/certificates. Returns ACME-issued certificate info for the user device.
     https://developer.cisco.com/docs/cloud-security/list-certificates-for-device/
     """
-    logger.info("Listing certificates for device")
     client = asset.get_client()
     data = client.ListCertificatesForDevice(params.user_id, params.device_id)
-    logger.info(f"got certificates for device {data}")
     return ListCertificatesForDeviceOutput(
         deviceId=data.get("deviceId"),
         certificates=data.get("certificates"),
@@ -718,10 +665,8 @@ def list_certificates_for_user(
     GET /ztna/users/{userId}/deviceCertificates. Returns all device certificates for the zero trust user.
     https://developer.cisco.com/docs/cloud-security/list-certificates-for-user/
     """
-    logger.info("Listing certificates for user")
     client = asset.get_client()
     data = client.ListCertificatesForUser(params.user_id)
-    logger.info(f"got certificates for user {data}")
     return ListCertificatesForUserOutput(
         userId=data.get("userId"),
         devices=data.get("devices"),
@@ -737,10 +682,8 @@ def revoke_certificates_for_device(
     DELETE /ztna/users/{userId}/devices/{deviceId}. Revokes active ACME-issued certificates and removes the zero trust user device.
     https://developer.cisco.com/docs/cloud-security/revoke-certificates-for-device/
     """
-    logger.info("Revoking certificates for device")
     client = asset.get_client()
     data = client.RevokeCertificatesForDevice(params.user_id, params.device_id)
-    logger.info(f"revoke result {data}")
     return RevokeCertificatesForDeviceOutput(
         success=data.get("success"),
         message=data.get("message"),
@@ -756,26 +699,22 @@ def get_roaming_computer(
     GET /roamingcomputers/{deviceId}. Returns status, swgStatus, lastSync, appliedBundle, version, OS info, etc.
     https://developer.cisco.com/docs/cloud-security/get-roaming-computer/
     """
-    logger.info("Getting roaming computer")
     client = asset.get_client()
     data = client.GetRoamingComputer(params.device_id)
-    logger.info(f"got roaming computer {data}")
     return _output_from_api_data(GetRoamingComputerOutput, data)
 
 
 @app.action()
 def list_roaming_computers(params: Params, asset: Asset) -> ListRoamingComputersOutput:
     """
-    List Roaming Computers.
-    GET /roamingcomputers. Returns all roaming computers (posture/security status) in the organization.
+    List all roaming computers
+    GET /roamingcomputers. Returns roaming computers (posture/security status) in the organization.
     https://developer.cisco.com/docs/cloud-security/list-roaming-computers/
     """
-    logger.info("Listing roaming computers")
     client = asset.get_client()
     data = client.ListRoamingComputers()
     if not isinstance(data, list):
         data = []
-    logger.info(f"got {len(data)} roaming computers")
     return ListRoamingComputersOutput(roamingComputers=data)
 
 
@@ -789,13 +728,11 @@ def list_swg_override_device_settings(
     Requires deployments.devices.swg:read.
     https://developer.cisco.com/docs/cloud-security/list-swg-override-device-settings/
     """
-    logger.info("Listing SWG override device settings")
     origin_ids = _parse_origin_ids(params.origin_ids)
     client = asset.get_client()
     data = client.ListSWGOverrideDeviceSettings(origin_ids)
     if not isinstance(data, list):
         data = []
-    logger.info("list_swg_override_device_settings returned %s items", len(data))
     return ListSWGOverrideDeviceSettingsOutput(settings=data)
 
 
@@ -809,16 +746,9 @@ def set_swg_override_device_settings(
     Requires deployments.devices.swg:write. Devices must be registered as roaming computers.
     https://developer.cisco.com/docs/cloud-security/set-swg-override-device-settings/
     """
-    logger.info("Setting SWG override device settings value=%s", params.value)
     origin_ids = _parse_origin_ids(params.origin_ids)
     client = asset.get_client()
     data = client.SetSWGOverrideDeviceSettings(params.value, origin_ids)
-    logger.info(
-        "set_swg_override_device_settings totalCount=%s successCount=%s failCount=%s",
-        data.get("totalCount"),
-        data.get("successCount"),
-        data.get("failCount"),
-    )
     return _output_from_api_data(SetSWGOverrideDeviceSettingsOutput, data)
 
 
@@ -832,13 +762,9 @@ def delete_swg_override_device_settings(
     organization SWG setting will apply after removal. Requires deployments.devices.swg:write.
     https://developer.cisco.com/docs/cloud-security/delete-swg-override-device-settings/
     """
-    logger.info("Deleting SWG override device settings")
     origin_ids = _parse_origin_ids(params.origin_ids)
     client = asset.get_client()
     data = client.DeleteSWGOverrideDeviceSettings(origin_ids)
-    logger.info(
-        "delete_swg_override_device_settings completed status=%s", data.get("status")
-    )
     return _output_from_api_data(DeleteSWGOverrideDeviceSettingsOutput, data)
 
 
@@ -851,11 +777,6 @@ def list_network_tunnel_groups(
     GET deployments/v2/networktunnelgroups. Requires deployments.networktunnelgroups:read.
     https://developer.cisco.com/docs/cloud-security/list-network-tunnel-groups/
     """
-    logger.info(
-        "Listing network tunnel groups offset=%s limit=%s",
-        params.offset,
-        params.limit,
-    )
     client = asset.get_client()
     filters_obj = _parse_optional_filters(params)
     offset, limit = _clamp_offset_limit(params, MAX_LIMIT_NETWORK_TUNNEL_GROUPS)
@@ -884,7 +805,6 @@ def get_network_tunnel_group(
     GET deployments/v2/networktunnelgroups/{id}. Requires deployments.networktunnelgroups:read.
     https://developer.cisco.com/docs/cloud-security/get-network-tunnel-group/
     """
-    logger.info("Getting network tunnel group id=%s", params.id)
     client = asset.get_client()
     data = client.GetNetworkTunnelGroup(params.id)
     return _output_from_api_data(GetNetworkTunnelGroupOutput, data)
@@ -897,7 +817,6 @@ def create_rule(params: CreateRuleParams, asset: Asset) -> CreateRuleOutput:
     POST policies/v2/rules. Requires policies.rules:write.
     https://developer.cisco.com/docs/cloud-security/create-rule/
     """
-    logger.info("Creating rule name=%s", params.rule_name)
     rule_conditions = _parse_json_param(
         params.rule_conditions_json, "rule_conditions_json", allow_list=True
     )
@@ -921,7 +840,6 @@ def create_rule(params: CreateRuleParams, asset: Asset) -> CreateRuleOutput:
         body["ruleIsEnabled"] = params.rule_is_enabled
     client = asset.get_client()
     data = client.CreateRule(body)
-    logger.info("create_rule result ruleId=%s", data.get("ruleId"))
     return _output_from_api_data(CreateRuleOutput, data)
 
 
@@ -934,9 +852,6 @@ def list_firewall_rules(
     GET policies/v2/rules. Requires policies.rules:read.
     https://developer.cisco.com/docs/cloud-security/list-rules/
     """
-    logger.info(
-        "Listing firewall rules offset=%s limit=%s", params.offset, params.limit
-    )
     client = asset.get_client()
     filters_obj = _parse_optional_filters(params)
     rule_name = getattr(params, "rule_name", None) or None
@@ -949,7 +864,6 @@ def list_firewall_rules(
         rule_name=rule_name,
         filters=filters_obj,
     )
-    logger.info("got firewall rules count=%s", data.get("count", 0))
     rules = (
         (data.get("results") or data.get("result") or [])
         if isinstance(data, dict)
@@ -970,11 +884,6 @@ def list_resource_connectors(
     GET deployments/v2/connectorAgents. Requires deployments.resourceconnectors:read.
     https://developer.cisco.com/docs/cloud-security/list-connectors/
     """
-    logger.info(
-        "Listing resource connectors offset=%s limit=%s",
-        params.offset,
-        params.limit,
-    )
     client = asset.get_client()
     filters_obj = _parse_optional_filters(params)
     offset, limit = _clamp_offset_limit(params, MAX_LIMIT_RESOURCE_CONNECTORS)

@@ -26,11 +26,11 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 [list managed devices](#action-list-managed-devices) - List registered network devices in the organization (deployments network devices / IOA platforms). <br>
 [delete managed device](#action-delete-managed-device) - Remove a network device by origin ID. <br>
 [get network device](#action-get-network-device) - Get a network device by origin ID. <br>
-[list api keys](#action-list-api-keys) - List SSE API Keys <br>
-[list virtual appliances](#action-list-virtual-appliances) - List SSE Virtual Appliances <br>
-[list sites](#action-list-sites) - List all Sites in the organization (fetches all pages). <br>
+[list api keys](#action-list-api-keys) - List all API keys <br>
+[list virtual appliances](#action-list-virtual-appliances) - List all virtual appliances <br>
+[list sites](#action-list-sites) - List all Sites in the organization <br>
 [list destination lists](#action-list-destination-lists) - List Destination Lists <br>
-[create destination list](#action-create-destination-list) - Create Destination List (optional initial destinations, up to 500 per request). <br>
+[create destination list](#action-create-destination-list) - Create Destination List (optional initial destinations, up to 500 per request). POST policies/v2/destinationlists. Requires policies.destinationLists:write. isGlobal is always false (no global lists on create); bundleTypeId is always 2. <br>
 [add to destination list](#action-add-to-destination-list) - Add to Destination List (one destination and optional comment per run). <br>
 [remove destinations from list](#action-remove-destinations-from-list) - Remove from Destination List <br>
 [get domain status](#action-get-domain-status) - Get Domain Status <br>
@@ -44,7 +44,7 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 [list certificates for user](#action-list-certificates-for-user) - List Certificates for User (ZTNA). <br>
 [revoke certificates for device](#action-revoke-certificates-for-device) - Revoke Certificates for Device (ZTNA). <br>
 [get roaming computer](#action-get-roaming-computer) - Get Roaming Computer (posture/security status for a device). <br>
-[list roaming computers](#action-list-roaming-computers) - List Roaming Computers. <br>
+[list roaming computers](#action-list-roaming-computers) - List all roaming computers <br>
 [list swg override device settings](#action-list-swg-override-device-settings) - List SWG Override Device Settings. <br>
 [set swg override device settings](#action-set-swg-override-device-settings) - Set SWG Override Device Settings. <br>
 [delete swg override device settings](#action-delete-swg-override-device-settings) - Delete SWG Override Device Settings. <br>
@@ -159,7 +159,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'list api keys'
 
-List SSE API Keys
+List all API keys
 
 Type: **generic** <br>
 Read only: **True**
@@ -196,7 +196,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'list virtual appliances'
 
-List SSE Virtual Appliances
+List all virtual appliances
 
 Type: **generic** <br>
 Read only: **True**
@@ -233,7 +233,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'list sites'
 
-List all Sites in the organization (fetches all pages).
+List all Sites in the organization
 
 Type: **generic** <br>
 Read only: **True**
@@ -307,7 +307,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'create destination list'
 
-Create a destination list in the organization. Optional `destinations_json` can include up to 500 destination objects per request. Per Cisco Secure Access, there is no support for global destination lists on create: the connector always sends `isGlobal` **false** and `bundleTypeId` **2**; those fields are not playbook parameters. Requires OAuth scope `policies.destinationLists:write`. See [Create Destination List](https://developer.cisco.com/docs/cloud-security/create-destination-list/).
+Create Destination List (optional initial destinations, up to 500 per request). POST policies/v2/destinationlists. Requires policies.destinationLists:write. isGlobal is always false (no global lists on create); bundleTypeId is always 2.
 
 Type: **generic** <br>
 Read only: **False**
@@ -318,7 +318,7 @@ PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
 **name** | required | Name of the destination list. | string | |
 **access** | required | Access classification: allow, block, url_proxy, no_decrypt, warn, none, thirdparty_block. | string | |
-**destinations_json** | optional | JSON array of up to 500 objects: destination (domain, URL, or IPv4 string), type (domain, url, or ipv4), optional comment. | string | |
+**destinations_json** | optional | Optional JSON array of up to 500 destinations: {"destination","type":"domain|url|ipv4","comment"?}. | string | |
 
 #### Action Output
 
@@ -783,7 +783,7 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'list roaming computers'
 
-List Roaming Computers.
+List all roaming computers
 
 Type: **generic** <br>
 Read only: **True**
