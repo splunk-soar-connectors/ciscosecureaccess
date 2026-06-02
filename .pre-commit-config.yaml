@@ -8,13 +8,13 @@ default_stages: [pre-commit]
 # This is a template for connector pre-commit hooks
 repos:
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.2.0
+    rev: v4.1.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
         args: [--verbose]
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+    rev: v5.0.0
     hooks:
       - id: check-merge-conflict
       - id: end-of-file-fixer
@@ -27,7 +27,7 @@ repos:
       - id: check-json
       - id: check-yaml
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.13.2
+    rev: v0.11.7
     hooks:
       - id: ruff
         args: [ "--fix", "--unsafe-fixes"] # Allow unsafe fixes (ruff pretty strict about what it can fix)
@@ -48,12 +48,10 @@ repos:
       - id: mdformat
         exclude: "release_notes/.*"
   - repo: https://github.com/returntocorp/semgrep
-    rev: v1.89.0
+    rev: v1.136.0
     hooks:
       - id: semgrep
-        language_version: python3.13
-        # setuptools 82+ drops pkg_resources; semgrep/opentelemetry still import it
-        additional_dependencies: ["setuptools>=69,<82"]
+        additional_dependencies: ["setuptools==81.0.0"]
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:
@@ -63,7 +61,7 @@ repos:
         exclude: "README.md|test/test_asset\\.json\\.example"
   # Central hooks
   - repo: https://github.com/phantomcyber/dev-cicd-tools
-    rev: v2.0.5
+    rev: v2.1.4
     hooks:
       - id: build-docs
         language: python
@@ -87,4 +85,24 @@ repos:
       - id: static-tests
         language: python
         additional_dependencies: ["local-hooks"]
-        args: ['.']
+        # Omit registry checks until GUID is merged into dev-cicd-tools appid_to_* JSON.
+        args:
+          - "."
+          - "--empty_consts"
+          - "--get_opt_params"
+          - "--light_and_dark_theme_logos"
+          - "--python_package"
+          - "--extra_fields_app_json"
+          - "--sequential_order"
+          - "--main_module"
+          - "--min_platform_version"
+          - "--test_connectivity"
+          - "--action_param_prefixes"
+          - "--action_param_matching_contains"
+          - "--minimal_data_paths"
+          - "--pip313_dependencies"
+          - "--validate_json_schema"
+          - "--fields_should_be_passwords"
+          - "--malicious_html"
+          - "--xss_custom_views"
+          - "--splunk_supported_debug_print"

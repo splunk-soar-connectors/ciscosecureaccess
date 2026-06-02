@@ -1,7 +1,0 @@
-{
-  "offset": 0,
-  "limit": 10,
-  "sort_by": "name",
-  "sort_order": "asc",
-  "include_statuses": false
-}

@@ -145,8 +145,8 @@ class ListDestinationListsOutput(ActionOutput):
 
 
 class AddToDestinationListOutput(ActionOutput):
-    destinationList: DestinationList
     addedDestinationId: str | None = None
+    destinationList: DestinationList
 
 
 class CreateDestinationListOutput(ActionOutput):

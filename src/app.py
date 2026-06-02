@@ -276,12 +276,12 @@ class Asset(BaseAsset):
 
 app = App(
     name="Cisco Secure Access",
-    app_type="corrective",
-    logo="logo_cisco.svg",
-    logo_dark="logo_cisco_dark.svg",
+    app_type="information",
+    logo="logo.svg",
+    logo_dark="logo_dark.svg",
     product_vendor="Cisco",
     product_name="Cisco Secure Access",
-    publisher="Splunk Inc.",
+    publisher="Splunk",
     appid="48ce45b2-0de5-474f-be52-8266350325cd",
     fips_compliant=False,
     asset_cls=Asset,
@@ -504,7 +504,7 @@ def add_to_destination_list(
         added_id = str(added_row["id"])
         destination_list = {**destination_list, "destinations": [added_row]}
     return AddToDestinationListOutput(
-        destinationList=destination_list, addedDestinationId=added_id
+        addedDestinationId=added_id, destinationList=destination_list
     )
 
 

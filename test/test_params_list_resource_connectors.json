@@ -1,6 +1,0 @@
-{
-  "offset": 0,
-  "limit": 10,
-  "sort_by": "originIpAddress",
-  "sort_order": "asc"
-}

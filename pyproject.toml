@@ -1,7 +1,7 @@
 [project]
 name = "ciscosecureaccess"
 version = "1.0.0"
-description = "sse"
+description = "Cisco Secure Access API actions for Splunk SOAR"
 license = "Copyright (c) 2026 Splunk Inc."
 requires-python = ">=3.13,<3.14"
 authors = [ "Splunk"
@@ -9,7 +9,7 @@ authors = [ "Splunk"
 dependencies = [
     "oauthlib>=3.3.1",
     "requests-oauthlib>=2.0.0",
-    "splunk-soar-sdk>=3.18.0",
+    "splunk-soar-sdk>=3.22.0",
 ]
 
 # Plugins required by `soarapps test unit` (-n / --no-cov). Install with:
@@ -22,6 +22,9 @@ soarapps-test = [
 
 [tool.soar.app]
 main_module = "src.app:app"
+
+[tool.pylint.MASTER]
+ignore-paths = ["^test/"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
