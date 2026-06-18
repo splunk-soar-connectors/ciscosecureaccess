@@ -170,13 +170,13 @@ DELETE deployments/v2/networkdevices/{originId}. Requires deployments.networkdev
 https://developer.cisco.com/docs/cloud-security/delete-network-device/
 
 Type: **generic** <br>
-Read only: **True**
+Read only: **False**
 
 #### Action Parameters
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**origin_id** | required | The origin ID of the network device to remove (path parameter from List Managed Devices). | numeric | |
+**origin_id** | required | Origin ID of the network device to remove (obtain from the List Managed Devices action). | numeric | |
 
 #### Action Output
 
@@ -203,7 +203,7 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**origin_id** | required | The origin ID of the network device (path parameter from List Managed Devices). | numeric | |
+**origin_id** | required | Origin ID of the network device (obtain from the List Managed Devices action). | numeric | |
 
 #### Action Output
 
@@ -341,7 +341,7 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**list_destinations** | optional | List all destination lists | boolean | |
+**list_destinations** | optional | If true, also fetch and embed each list's destination entries. Default false (returns list metadata only). | boolean | |
 
 #### Action Output
 
@@ -383,7 +383,7 @@ Secure Access does not support global destination lists on create; the request a
 https://developer.cisco.com/docs/cloud-security/create-destination-list/
 
 Type: **generic** <br>
-Read only: **True**
+Read only: **False**
 
 #### Action Parameters
 
@@ -433,7 +433,7 @@ Add to Destination List (one destination and optional comment per run).
 https://developer.cisco.com/docs/cloud-security/add-destinations-to-destination-list/
 
 Type: **generic** <br>
-Read only: **True**
+Read only: **False**
 
 #### Action Parameters
 
@@ -484,7 +484,7 @@ Remove from Destination List
 https://developer.cisco.com/docs/cloud-security/delete-destinations-from-destination-list/
 
 Type: **generic** <br>
-Read only: **True**
+Read only: **False**
 
 #### Action Parameters
 
@@ -538,7 +538,7 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**domain** | required | The domain to get. | string | |
+**domain** | required | Domain name to look up (e.g. cisco.com). | string | |
 
 #### Action Output
 
@@ -567,7 +567,7 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**domain** | required | The domain to get. | string | |
+**domain** | required | Domain name to look up (e.g. cisco.com). | string | |
 
 #### Action Output
 
@@ -595,7 +595,9 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**domain** | required | The domain to get. | string | |
+**domain** | required | The domain to get passive DNS records for. | string | |
+**offset** | optional | Index to start reading the collection (0-based). Default 0. | numeric | |
+**limit** | optional | Maximum records to return in one call (1-9999). Default 1000. Use 9999 to retrieve the full set in a single call; the API caps total retrievable records at 10000 per domain. | numeric | |
 
 #### Action Output
 
@@ -604,6 +606,8 @@ DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
 action_result.status | string | | success failure |
 action_result.message | string | | |
 action_result.parameter.domain | string | | |
+action_result.parameter.offset | numeric | | |
+action_result.parameter.limit | numeric | | |
 action_result.data.\*.passive_dns_records.\*.minTtl | numeric | | |
 action_result.data.\*.passive_dns_records.\*.maxTtl | numeric | | |
 action_result.data.\*.passive_dns_records.\*.firstSeen | numeric | | |
@@ -615,6 +619,12 @@ action_result.data.\*.passive_dns_records.\*.securityCategories.\* | string | | 
 action_result.data.\*.passive_dns_records.\*.contentCategories.\* | string | | |
 action_result.data.\*.passive_dns_records.\*.firstSeenISO | string | | |
 action_result.data.\*.passive_dns_records.\*.lastSeenISO | string | | |
+action_result.data.\*.total_records | numeric | | |
+action_result.data.\*.returned_records | numeric | | |
+action_result.data.\*.offset | numeric | | |
+action_result.data.\*.limit | numeric | | |
+action_result.data.\*.has_more_records | boolean | | True False |
+action_result.data.\*.next_offset | numeric | | |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
@@ -653,16 +663,16 @@ Terminate VPN Session
 https://developer.cisco.com/docs/cloud-security/disconnect-vpn-users/
 
 Type: **generic** <br>
-Read only: **True**
+Read only: **False**
 
 #### Action Parameters
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**profile_name** | optional | The profile name to terminate the VPN session for. | string | |
-**region** | optional | The region to terminate the VPN session for. | string | |
-**sessions** | optional | The sessions to terminate the VPN session for. | string | |
-**usernames** | optional | The usernames to terminate the VPN session for. | string | |
+**profile_name** | optional | VPN profile name identifying the user connections to disconnect. | string | |
+**region** | optional | Data center region identifying the VPN connections to disconnect. | string | |
+**sessions** | optional | VPN session ID(s) to disconnect. | string | |
+**usernames** | optional | Username(s) whose VPN connections should be disconnected. | string | |
 
 #### Action Output
 
@@ -691,7 +701,7 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**type** | required | The type of identities to list. | string | |
+**type** | required | Identity type to list: 'device' for device registrations, 'securityGroupTag' for security group tags (SGTs). | string | |
 
 #### Action Output
 
@@ -717,7 +727,7 @@ PUT /identities/registrations/{type}. Pass 1-250 identity objects as JSON array 
 https://developer.cisco.com/docs/cloud-security/update-identities/
 
 Type: **generic** <br>
-Read only: **True**
+Read only: **False**
 
 #### Action Parameters
 
@@ -810,7 +820,7 @@ DELETE /ztna/users/{userId}/devices/{deviceId}. Revokes active ACME-issued certi
 https://developer.cisco.com/docs/cloud-security/revoke-certificates-for-device/
 
 Type: **generic** <br>
-Read only: **True**
+Read only: **False**
 
 #### Action Parameters
 
@@ -947,7 +957,7 @@ Requires deployments.devices.swg:write. Devices must be registered as roaming co
 https://developer.cisco.com/docs/cloud-security/set-swg-override-device-settings/
 
 Type: **generic** <br>
-Read only: **True**
+Read only: **False**
 
 #### Action Parameters
 
@@ -982,7 +992,7 @@ organization SWG setting will apply after removal. Requires deployments.devices.
 https://developer.cisco.com/docs/cloud-security/delete-swg-override-device-settings/
 
 Type: **generic** <br>
-Read only: **True**
+Read only: **False**
 
 #### Action Parameters
 
@@ -1065,7 +1075,7 @@ Read only: **True**
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
 --------- | -------- | ----------- | ---- | --------
-**id** | required | The ID of the Network Tunnel Group. | numeric | |
+**id** | required | ID of the network tunnel group (obtain from the List Network Tunnel Groups action). | numeric | |
 
 #### Action Output
 
@@ -1097,7 +1107,7 @@ POST policies/v2/rules. Requires policies.rules:write.
 https://developer.cisco.com/docs/cloud-security/create-rule/
 
 Type: **generic** <br>
-Read only: **True**
+Read only: **False**
 
 #### Action Parameters
 
@@ -1247,7 +1257,7 @@ POST admin/v2/iam/rotateKey. Requires admin.iam:write.
 https://developer.cisco.com/docs/cloud-security/refresh-s3-bucket-key/
 
 Type: **generic** <br>
-Read only: **True**
+Read only: **False**
 
 #### Action Parameters
 

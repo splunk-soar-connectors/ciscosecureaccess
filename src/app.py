@@ -34,6 +34,7 @@ from .params import (
     GetRoamingComputerParams,
     RemoveDestinationsFromListParams,
     GetDomainParams,
+    GetPassiveDNSParams,
     SetSWGOverrideDeviceSettingsParams,
     TerminateVPNSessionParams,
     UpdateIdentitiesParams,
@@ -123,6 +124,34 @@ def _output_from_api_data(OutputModel, data: dict):
         OutputModel, "__fields__", {}
     )
     return OutputModel(**{k: data[k] for k in data if k in fields})
+
+
+def _stringify_item_values(items, value_keys: tuple[str, ...]):
+    """
+    Coerce selected value fields of a list of dicts to strings.
+
+    Cisco returns rule condition/setting values as JSON strings, booleans, or
+    numbers, but the SOAR output schema only allows ``Optional[str]``. Stringify
+    the value fields (rendering booleans json-style) so the typed output model
+    can parse the response without losing information.
+    """
+    if not isinstance(items, list):
+        return items
+    normalized = []
+    for item in items:
+        if isinstance(item, dict):
+            normalized_item = dict(item)
+            for key in value_keys:
+                value = normalized_item.get(key)
+                if value is not None and not isinstance(value, str):
+                    if isinstance(value, bool):
+                        normalized_item[key] = "true" if value else "false"
+                    else:
+                        normalized_item[key] = str(value)
+            normalized.append(normalized_item)
+        else:
+            normalized.append(item)
+    return normalized
 
 
 def _parse_comma_list(s: str) -> list[str]:
@@ -312,7 +341,7 @@ def list_managed_devices(params: Params, asset: Asset) -> ListManagedDevicesOutp
     return ListManagedDevicesOutput(devices=devices)
 
 
-@app.action()
+@app.action(read_only=False)
 def delete_managed_device(
     params: DeleteManagedDeviceParams, asset: Asset
 ) -> DeleteManagedDeviceOutput:
@@ -433,7 +462,7 @@ def list_destination_lists(
     return ListDestinationListsOutput(destinationLists=destination_lists_output)
 
 
-@app.action()
+@app.action(read_only=False)
 def create_destination_list(
     params: CreateDestinationListParams, asset: Asset
 ) -> CreateDestinationListOutput:
@@ -469,7 +498,7 @@ def create_destination_list(
     return CreateDestinationListOutput(destinationList=data)
 
 
-@app.action()
+@app.action(read_only=False)
 def add_to_destination_list(
     params: AddToDestinationListParams, asset: Asset
 ) -> AddToDestinationListOutput:
@@ -508,7 +537,7 @@ def add_to_destination_list(
     )
 
 
-@app.action()
+@app.action(read_only=False)
 def remove_destinations_from_list(
     params: RemoveDestinationsFromListParams, asset: Asset
 ) -> RemoveDestinationsFromListOutput:
@@ -565,15 +594,30 @@ def get_domain_risk_score(
 
 
 @app.action()
-def get_passive_dns(params: GetDomainParams, asset: Asset) -> GetPassiveDNSOutput:
+def get_passive_dns(params: GetPassiveDNSParams, asset: Asset) -> GetPassiveDNSOutput:
     """
     Get Passive DNS
     https://developer.cisco.com/docs/cloud-security/get-resource-records-for-name/
     """
     client = asset.get_client()
-    domain = params.domain
-    passive_dns_response = client.GetPassiveDNS(domain)
-    return GetPassiveDNSOutput(passive_dns_records=passive_dns_response)
+    records, page_info = client.GetPassiveDNS(
+        params.domain, offset=params.offset, limit=params.limit
+    )
+    offset = page_info.get("offset", params.offset)
+    total = page_info.get("totalNumRecords")
+    has_more = page_info.get("hasMoreRecords")
+    if has_more is None and total is not None:
+        has_more = (offset + len(records)) < total
+    next_offset = offset + len(records) if has_more else None
+    return GetPassiveDNSOutput(
+        passive_dns_records=records,
+        total_records=total,
+        returned_records=len(records),
+        offset=offset,
+        limit=page_info.get("limit", params.limit),
+        has_more_records=has_more,
+        next_offset=next_offset,
+    )
 
 
 @app.action()
@@ -587,7 +631,7 @@ def list_vpn_sessions(params: Params, asset: Asset) -> ListVPNSessionsOutput:
     return ListVPNSessionsOutput(vpn_sessions=vpn_sessions)
 
 
-@app.action()
+@app.action(read_only=False)
 def terminate_vpn_session(
     params: TerminateVPNSessionParams, asset: Asset
 ) -> TerminateVPNSessionOutput:
@@ -615,7 +659,7 @@ def list_identities(params: ListIdentitiesParams, asset: Asset) -> ListIdentitie
     return ListIdentitiesOutput(identities=identities)
 
 
-@app.action()
+@app.action(read_only=False)
 def update_identities(
     params: UpdateIdentitiesParams, asset: Asset
 ) -> UpdateIdentitiesOutput:
@@ -673,7 +717,7 @@ def list_certificates_for_user(
     )
 
 
-@app.action()
+@app.action(read_only=False)
 def revoke_certificates_for_device(
     params: RevokeCertificatesForDeviceParams, asset: Asset
 ) -> RevokeCertificatesForDeviceOutput:
@@ -736,7 +780,7 @@ def list_swg_override_device_settings(
     return ListSWGOverrideDeviceSettingsOutput(settings=data)
 
 
-@app.action()
+@app.action(read_only=False)
 def set_swg_override_device_settings(
     params: SetSWGOverrideDeviceSettingsParams, asset: Asset
 ) -> SetSWGOverrideDeviceSettingsOutput:
@@ -752,7 +796,7 @@ def set_swg_override_device_settings(
     return _output_from_api_data(SetSWGOverrideDeviceSettingsOutput, data)
 
 
-@app.action()
+@app.action(read_only=False)
 def delete_swg_override_device_settings(
     params: DeleteSWGOverrideDeviceSettingsParams, asset: Asset
 ) -> DeleteSWGOverrideDeviceSettingsOutput:
@@ -810,7 +854,7 @@ def get_network_tunnel_group(
     return _output_from_api_data(GetNetworkTunnelGroupOutput, data)
 
 
-@app.action()
+@app.action(read_only=False)
 def create_rule(params: CreateRuleParams, asset: Asset) -> CreateRuleOutput:
     """
     Create an access rule on the organization's Access policy.
@@ -840,6 +884,15 @@ def create_rule(params: CreateRuleParams, asset: Asset) -> CreateRuleOutput:
         body["ruleIsEnabled"] = params.rule_is_enabled
     client = asset.get_client()
     data = client.CreateRule(body)
+    if isinstance(data, dict):
+        if "ruleConditions" in data:
+            data["ruleConditions"] = _stringify_item_values(
+                data["ruleConditions"], ("attributeValue",)
+            )
+        if "ruleSettings" in data:
+            data["ruleSettings"] = _stringify_item_values(
+                data["ruleSettings"], ("settingValue",)
+            )
     return _output_from_api_data(CreateRuleOutput, data)
 
 
@@ -902,7 +955,7 @@ def list_resource_connectors(
     )
 
 
-@app.action()
+@app.action(read_only=False)
 def refresh_s3_key(params: Params, asset: Asset) -> RefreshS3KeyOutput:
     """
     Rotate the Cisco-managed S3 bucket key for the organization.

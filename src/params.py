@@ -18,7 +18,8 @@ class ListDestinationListsParams(Params):
     list_destinations: bool = Param(
         required=False,
         default=False,
-        description="List all destination lists",
+        description="If true, also fetch and embed each list's destination entries. "
+        "Default false (returns list metadata only).",
     )
 
 
@@ -74,21 +75,49 @@ class RemoveDestinationsFromListParams(Params):
 
 
 class GetDomainParams(Params):
-    domain: str = Param(required=True, description="The domain to get.")
+    domain: str = Param(
+        required=True, description="Domain name to look up (e.g. cisco.com)."
+    )
+
+
+class GetPassiveDNSParams(Params):
+    """Parameters for Get Passive DNS. GET investigate/v2/pdns/name/{domain}."""
+
+    domain: str = Param(
+        required=True, description="The domain to get passive DNS records for."
+    )
+    offset: int = Param(
+        required=False,
+        default=0,
+        description="Index to start reading the collection (0-based). Default 0.",
+    )
+    limit: int = Param(
+        required=False,
+        default=1000,
+        description="Maximum records to return in one call (1-9999). Default 1000. "
+        "Use 9999 to retrieve the full set in a single call; the API caps total "
+        "retrievable records at 10000 per domain.",
+    )
 
 
 class TerminateVPNSessionParams(Params):
+    """Parameters for Terminate VPN Session. POST admin/v2/vpn/userConnections (action disconnect)."""
+
     profile_name: str = Param(
-        required=False, description="The profile name to terminate the VPN session for."
+        required=False,
+        description="VPN profile name identifying the user connections to disconnect.",
     )
     region: str = Param(
-        required=False, description="The region to terminate the VPN session for."
+        required=False,
+        description="Data center region identifying the VPN connections to disconnect.",
     )
     sessions: str = Param(
-        required=False, description="The sessions to terminate the VPN session for."
+        required=False,
+        description="VPN session ID(s) to disconnect.",
     )
     usernames: str = Param(
-        required=False, description="The usernames to terminate the VPN session for."
+        required=False,
+        description="Username(s) whose VPN connections should be disconnected.",
     )
 
 
@@ -98,7 +127,8 @@ IDENTITY_TYPE_VALUES = ["device", "securityGroupTag"]
 class ListIdentitiesParams(Params):
     type: str = Param(
         required=True,
-        description="The type of identities to list.",
+        description="Identity type to list: 'device' for device registrations, "
+        "'securityGroupTag' for security group tags (SGTs).",
         value_list=IDENTITY_TYPE_VALUES,
     )
 
@@ -145,7 +175,7 @@ class GetRoamingComputerParams(Params):
 class DeleteManagedDeviceParams(Params):
     origin_id: int = Param(
         required=True,
-        description="The origin ID of the network device to remove (path parameter from List Managed Devices).",
+        description="Origin ID of the network device to remove (obtain from the List Managed Devices action).",
     )
 
 
@@ -154,7 +184,7 @@ class GetNetworkDeviceParams(Params):
 
     origin_id: int = Param(
         required=True,
-        description="The origin ID of the network device (path parameter from List Managed Devices).",
+        description="Origin ID of the network device (obtain from the List Managed Devices action).",
     )
 
 
@@ -163,7 +193,7 @@ class GetNetworkTunnelGroupParams(Params):
 
     id: int = Param(
         required=True,
-        description="The ID of the Network Tunnel Group.",
+        description="ID of the network tunnel group (obtain from the List Network Tunnel Groups action).",
     )
 
 

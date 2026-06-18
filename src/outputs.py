@@ -238,6 +238,12 @@ class PassiveDNS(ActionOutput):
 
 class GetPassiveDNSOutput(ActionOutput):
     passive_dns_records: list[PassiveDNS] | None = None
+    total_records: int | None = None
+    returned_records: int | None = None
+    offset: int | None = None
+    limit: int | None = None
+    has_more_records: bool | None = None
+    next_offset: int | None = None
 
 
 class VPNSession(ActionOutput):

@@ -28,7 +28,6 @@ or implied.
 """
 
 import json
-import math
 import requests
 from oauthlib.oauth2 import BackendApplicationClient
 from oauthlib.oauth2 import TokenExpiredError
@@ -57,6 +56,10 @@ BEARER_PREFIX = "Bearer "
 
 # All HTTP calls must use a bounded wait (bandit S113).
 HTTP_REQUEST_TIMEOUT_SEC = 60
+
+# pdns default and max limit
+PDNS_DEFAULT_LIMIT = 1000
+PDNS_MAX_LIMIT = 9999
 
 
 def _encode_filters(filters):
@@ -169,13 +172,18 @@ class SSE_API:
         return req
 
     def QueryAllPages(
-        self, scope, end_point, operation=GET, limit=100, response_is_array=False
+        self,
+        scope,
+        end_point,
+        operation=GET,
+        limit=100,
+        response_is_array=False,
     ):
         """
-        GET all pages of a paged endpoint and return the combined result.
-        Supports two response shapes:
-        - Object with "data" or "records" and "meta"/"pageInfo" (default).
-        - Raw array (response_is_array=True): response body is the list; more pages when len(chunk) == limit.
+        Fetch all pages of a 1-based page-numbered endpoint and return the combined result.
+
+        response_is_array: True when the body is a raw list rather than a
+        {data/records, meta} object.
         """
         all_data = []
         page = 1
@@ -213,15 +221,12 @@ class SSE_API:
             if isinstance(limit_val, str):
                 limit_val = int(limit_val)
             has_more = last_meta.get("hasMoreRecords", True)
-            if total is not None and limit_val:
-                total_pages = math.ceil(total / limit_val)
-                if page >= total_pages or len(chunk) < limit_val:
-                    break
-            elif has_more is False:
+            if len(chunk) < limit_val:
                 break
-            else:
-                if len(chunk) < limit_val:
-                    break
+            if total is not None and len(all_data) >= total:
+                break
+            if has_more is False:
+                break
             page += 1
         return {
             "status": last_status,
@@ -496,13 +501,35 @@ class SSE_API:
         data = self.ParseJsonResponse(res)
         return data
 
-    def GetPassiveDNS(self, domain):
+    def GetPassiveDNS(self, domain, offset=0, limit=PDNS_DEFAULT_LIMIT):
+        """
+        Get passive DNS (historical resolution) records for a domain.
+
+        Fetches a single page so the caller controls volume via offset/limit
+        instead of walking the whole collection. limit is clamped to
+        [1, PDNS_MAX_LIMIT]; ask for PDNS_MAX_LIMIT to retrieve the full
+        10000-record-capped set in one request.
+
+        Returns a (records, page_info) tuple, where page_info carries the
+        endpoint's offset/limit/totalNumRecords/hasMoreRecords so callers can
+        page through results.
+        """
         end_point_domain = f"pdns/name/{domain}"
-        data = self.QueryAllPages(
-            scope=investigate, end_point=end_point_domain, operation=GET
+        if not isinstance(limit, int) or limit < 1:
+            limit = PDNS_DEFAULT_LIMIT
+        limit = min(limit, PDNS_MAX_LIMIT)
+        if not isinstance(offset, int) or offset < 0:
+            offset = 0
+        res = self.Query(
+            scope=investigate,
+            end_point=end_point_domain,
+            operation=GET,
+            params={"offset": offset, "limit": limit},
         )
-        data = data["data"]
-        return data
+        parsed = self.ParseJsonResponse(res)
+        records = parsed.get("records") or parsed.get("data") or []
+        page_info = parsed.get("pageInfo") or parsed.get("meta") or {}
+        return records, page_info
 
     def RefreshS3BucketKey(self):
         """
