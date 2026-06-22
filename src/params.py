@@ -11,7 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from soar_sdk.params import Param, Params
+from soar_sdk.params import MakeRequestParams, Param, Params
+
+
+class CiscoSecureAccessMakeRequestParams(MakeRequestParams):
+    endpoint: str = Param(
+        required=True,
+        description=(
+            "Cisco Secure Access API path, relative to the configured base URL. "
+            "For example: 'deployments/v2/networkdevices' or "
+            "'admin/v2/vpn/userConnections'. Do not include the base URL."
+        ),
+    )
+    verify_ssl: bool = Param(
+        required=False,
+        default=True,
+        description="Whether to verify the SSL certificate. Default true.",
+    )
 
 
 class ListDestinationListsParams(Params):

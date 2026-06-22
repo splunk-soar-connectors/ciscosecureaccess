@@ -13,13 +13,16 @@
 # limitations under the License.
 
 import json
+from soar_sdk.action_results import MakeRequestOutput
 from soar_sdk.app import App
 from soar_sdk.asset import BaseAsset
 from soar_sdk.asset import AssetField
+from soar_sdk.exceptions import ActionFailure
 from soar_sdk.params import Params
 
 from .params import (
     AddToDestinationListParams,
+    CiscoSecureAccessMakeRequestParams,
     CreateDestinationListParams,
     CreateRuleParams,
     DeleteManagedDeviceParams,
@@ -101,6 +104,46 @@ def _parse_json_param(value: str, param_name: str, *, allow_list: bool = False):
     if allow_list and not isinstance(parsed, list):
         raise ValueError(f"{param_name} must be a JSON array")
     return parsed
+
+
+def _parse_make_request_json_object(value: str | None, param_name: str) -> dict | None:
+    """Parse an optional make request JSON object parameter."""
+    if value is None or not str(value).strip():
+        return None
+    try:
+        parsed = json.loads(value)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise ActionFailure(
+            f"Invalid JSON in the {param_name} parameter: {value}"
+        ) from exc
+    if not isinstance(parsed, dict):
+        raise ActionFailure(f"The {param_name} parameter must be a JSON object.")
+    return parsed
+
+
+def _parse_make_request_query_parameters(
+    value: str | None,
+) -> tuple[dict | None, str | None]:
+    """Parse query parameters as a JSON object or pass through a raw query string."""
+    if value is None or not str(value).strip():
+        return None, None
+    try:
+        parsed = json.loads(value)
+    except (json.JSONDecodeError, TypeError):
+        return None, str(value).lstrip("?")
+    if not isinstance(parsed, dict):
+        raise ActionFailure("The query_parameters parameter must be a JSON object.")
+    return parsed, None
+
+
+def _parse_make_request_body(value: str | None):
+    """Parse an optional make request JSON body."""
+    if value is None or not str(value).strip():
+        return None
+    try:
+        return json.loads(value)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise ActionFailure(f"Invalid JSON in the body parameter: {value}") from exc
 
 
 def _parse_optional_filters(params) -> dict | None:
@@ -969,6 +1012,47 @@ def refresh_s3_key(params: Params, asset: Asset) -> RefreshS3KeyOutput:
         currentKeyId=data.get("currentKeyId"),
         secretAccessKey=data.get("secretAccessKey"),
         keyCreationDate=data.get("keyCreationDate"),
+    )
+
+
+@app.make_request()
+def make_request(
+    params: CiscoSecureAccessMakeRequestParams, asset: Asset
+) -> MakeRequestOutput:
+    """Make an HTTP request to any Cisco Secure Access API endpoint using the configured asset credentials."""
+    endpoint = params.endpoint.strip()
+    if endpoint.lower().startswith(("http://", "https://")):
+        raise ActionFailure(
+            "Do not include the base URL in the endpoint. "
+            "Only the API path is needed, e.g. 'deployments/v2/networkdevices'."
+        )
+    if not endpoint.strip("/"):
+        raise ActionFailure("The endpoint parameter must contain an API path.")
+
+    headers = _parse_make_request_json_object(params.headers, "headers")
+    query_parameters, query_string = _parse_make_request_query_parameters(
+        params.query_parameters
+    )
+    body = _parse_make_request_body(params.body)
+
+    client = asset.get_client()
+    try:
+        response = client.MakeRequest(
+            method=params.http_method,
+            endpoint=endpoint,
+            headers=headers,
+            query_parameters=query_parameters,
+            query_string=query_string,
+            body=body,
+            timeout=params.timeout,
+            verify_ssl=params.verify_ssl,
+        )
+    except Exception as exc:
+        raise ActionFailure(f"Request failed: {exc}") from exc
+
+    return MakeRequestOutput(
+        status_code=response.status_code,
+        response_body=response.text,
     )
 
 

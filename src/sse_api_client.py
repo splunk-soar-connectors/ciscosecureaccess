@@ -289,6 +289,46 @@ class SSE_API:
         json_response = res.json()
         return json_response
 
+    def MakeRequest(
+        self,
+        *,
+        method: str,
+        endpoint: str,
+        headers: dict | None = None,
+        query_parameters: dict | None = None,
+        query_string: str | None = None,
+        body=None,
+        timeout: int | None = None,
+        verify_ssl: bool = True,
+    ) -> requests.Response:
+        """Execute an arbitrary Cisco Secure Access API request with asset auth."""
+        if self.token is None:
+            self.GetToken()
+
+        request_headers = {
+            self.auth_header_name: BEARER_PREFIX + self.token,
+            "Accept": "application/json",
+        }
+        if body is not None:
+            request_headers["Content-Type"] = "application/json"
+        if headers:
+            request_headers.update(headers)
+
+        request_url = f"{self.base_url.rstrip('/')}/{endpoint.lstrip('/')}"
+        if query_string:
+            separator = "&" if "?" in request_url else "?"
+            request_url = f"{request_url}{separator}{query_string.lstrip('?')}"
+
+        return requests.request(
+            method=method.upper(),
+            url=request_url,
+            headers=request_headers,
+            params=query_parameters,
+            json=body,
+            timeout=timeout or HTTP_REQUEST_TIMEOUT_SEC,
+            verify=verify_ssl,
+        )
+
     def ListApiKeys(self):
         return self.QueryAllPagesOffset(
             scope="admin",

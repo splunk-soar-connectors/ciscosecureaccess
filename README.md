@@ -109,7 +109,8 @@ GET deployments/v2/connectorAgents. Requires deployments.resourceconnectors:read
 https://developer.cisco.com/docs/cloud-security/list-connectors/ <br>
 [refresh s3 key](#action-refresh-s3-key) - Rotate the Cisco-managed S3 bucket key for the organization.
 POST admin/v2/iam/rotateKey. Requires admin.iam:write.
-https://developer.cisco.com/docs/cloud-security/refresh-s3-bucket-key/
+https://developer.cisco.com/docs/cloud-security/refresh-s3-bucket-key/ <br>
+[make request](#action-make-request) - Make an HTTP request to any Cisco Secure Access API endpoint using the configured asset credentials.
 
 ## action: 'test connectivity'
 
@@ -1273,6 +1274,45 @@ action_result.data.\*.oldKeyId | string | | |
 action_result.data.\*.currentKeyId | string | | |
 action_result.data.\*.secretAccessKey | string | | |
 action_result.data.\*.keyCreationDate | string | | |
+summary.total_objects | numeric | | 1 |
+summary.total_objects_successful | numeric | | 1 |
+
+## action: 'make request'
+
+Make an HTTP request to any Cisco Secure Access API endpoint using the configured asset credentials.
+
+Type: **generic** <br>
+Read only: **False**
+
+'make request' action for the app. Used to handle arbitrary HTTP requests with the app's asset
+
+#### Action Parameters
+
+PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
+--------- | -------- | ----------- | ---- | --------
+**http_method** | required | The HTTP method to use for the request. | string | |
+**endpoint** | required | Cisco Secure Access API path, relative to the configured base URL. For example: 'deployments/v2/networkdevices' or 'admin/v2/vpn/userConnections'. Do not include the base URL. | string | |
+**headers** | optional | The headers to send with the request (JSON object). An example is {'Content-Type': 'application/json'} | string | |
+**query_parameters** | optional | Parameters to append to the URL (JSON object or query string). An example is ?key=value&key2=value2 | string | |
+**body** | optional | The body to send with the request (JSON object). An example is {'key': 'value', 'key2': 'value2'} | string | |
+**timeout** | optional | The timeout for the request in seconds. | numeric | |
+**verify_ssl** | optional | Whether to verify the SSL certificate. Default true. | boolean | |
+
+#### Action Output
+
+DATA PATH | TYPE | CONTAINS | EXAMPLE VALUES
+--------- | ---- | -------- | --------------
+action_result.status | string | | success failure |
+action_result.message | string | | |
+action_result.parameter.http_method | string | | |
+action_result.parameter.endpoint | string | | |
+action_result.parameter.headers | string | | |
+action_result.parameter.query_parameters | string | | |
+action_result.parameter.body | string | | |
+action_result.parameter.timeout | numeric | | |
+action_result.parameter.verify_ssl | boolean | | |
+action_result.data.\*.status_code | numeric | | 200 404 500 |
+action_result.data.\*.response_body | string | | {"key": "value"} |
 summary.total_objects | numeric | | 1 |
 summary.total_objects_successful | numeric | | 1 |
 
