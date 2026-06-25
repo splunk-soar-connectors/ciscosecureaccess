@@ -11,6 +11,32 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from .src import app
 
-__ALL__ = [app]
+from importlib import import_module
+
+from .core import app
+
+_ACTION_MODULES = (
+    "admin",
+    "destination_lists",
+    "devices",
+    "domains",
+    "identities",
+    "make_request",
+    "rules",
+    "swg",
+    "vpn",
+)
+
+
+def _register_actions() -> None:
+    package = __package__ or "src"
+    for module_name in _ACTION_MODULES:
+        import_module(f".actions.{module_name}", package=package)
+
+
+_register_actions()
+
+
+if __name__ == "__main__":
+    app.cli()
