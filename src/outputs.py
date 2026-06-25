@@ -45,30 +45,6 @@ class DeleteManagedDeviceOutput(ActionOutput):
     message: str | None = None
 
 
-class ApiKey(ActionOutput):
-    id: str
-    creatorName: str
-    creatorEmail: str
-    createdAt: str
-    expireAt: str
-    modifiedAt: str
-    lastUsedAt: str
-    lastRefreshedAt: str
-    scopes: list[str]
-    name: str | None = None
-    clientId: str | None = None
-    creatorKeyId: str | None = None
-    description: str | None = None
-
-
-class ListAPIKeysOutput(ActionOutput):
-    keys: list[ApiKey]
-    message: str | None = None
-    offset: int | None = None
-    limit: int | None = None
-    total: int | None = None
-
-
 class VirtualAppliance(ActionOutput):
     originId: int
     name: str
@@ -261,11 +237,6 @@ class ListVPNSessionsOutput(ActionOutput):
     vpn_sessions: list[VPNSession]
 
 
-class TerminateVPNSessionOutput(ActionOutput):
-    statusCode: int | None = None
-    message: str | None = None
-
-
 class Identity(ActionOutput):
     key: str
     label: str
@@ -311,11 +282,6 @@ class ZtnaDeviceCertificateInfo(ActionOutput):
 class ListCertificatesForUserOutput(ActionOutput):
     userId: str | None = None
     devices: list[ZtnaDeviceCertificateInfo] | None = None
-
-
-class RevokeCertificatesForDeviceOutput(ActionOutput):
-    success: bool | None = None
-    message: str | None = None
 
 
 class FirewallRule(ActionOutput):
@@ -498,15 +464,3 @@ class DeleteSWGOverrideDeviceSettingsOutput(ActionOutput):
     """Response from Delete SWG Override Device Settings (POST deployments/v2/deviceSettings/SWGEnabled/remove)."""
 
     status: str | None = None
-
-
-class RefreshS3KeyOutput(ActionOutput):
-    """
-    Response from Refresh S3 Bucket Key (POST admin/v2/iam/rotateKey).
-    secretAccessKey is sensitive; do not log it.
-    """
-
-    oldKeyId: str | None = None
-    currentKeyId: str | None = None
-    secretAccessKey: str | None = None
-    keyCreationDate: str | None = None

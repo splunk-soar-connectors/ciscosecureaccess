@@ -17,7 +17,6 @@ from importlib import import_module
 from .core import app
 
 _ACTION_MODULES = (
-    "admin",
     "destination_lists",
     "devices",
     "domains",

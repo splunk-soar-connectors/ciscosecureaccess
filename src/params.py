@@ -116,27 +116,6 @@ class GetPassiveDNSParams(Params):
     )
 
 
-class TerminateVPNSessionParams(Params):
-    """Parameters for Terminate VPN Session. POST admin/v2/vpn/userConnections (action disconnect)."""
-
-    profile_name: str = Param(
-        required=False,
-        description="VPN profile name identifying the user connections to disconnect.",
-    )
-    region: str = Param(
-        required=False,
-        description="Data center region identifying the VPN connections to disconnect.",
-    )
-    sessions: str = Param(
-        required=False,
-        description="VPN session ID(s) to disconnect.",
-    )
-    usernames: str = Param(
-        required=False,
-        description="Username(s) whose VPN connections should be disconnected.",
-    )
-
-
 IDENTITY_TYPE_VALUES = ["device", "securityGroupTag"]
 
 
@@ -170,14 +149,6 @@ class ListCertificatesForUserParams(Params):
     user_id: str = Param(
         required=True,
         description="The ID of the user (ZTNA). Get all device certificates for this user.",
-    )
-
-
-class RevokeCertificatesForDeviceParams(Params):
-    user_id: str = Param(required=True, description="The ID of the user (ZTNA).")
-    device_id: str = Param(
-        required=True,
-        description="The ID of the user device. Revokes active certificates and removes the device.",
     )
 
 

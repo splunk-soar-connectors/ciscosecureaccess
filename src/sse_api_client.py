@@ -329,15 +329,6 @@ class SSE_API:
             verify=verify_ssl,
         )
 
-    def ListApiKeys(self):
-        return self.QueryAllPagesOffset(
-            scope="admin",
-            end_point="apiKeys",
-            operation=GET,
-            limit=100,
-            data_key="keys",
-        )
-
     def ListNetworkDevices(self):
         res = self.Query(scope="deployments", end_point="networkdevices", operation=GET)
         data = self.ParseJsonResponse(res)
@@ -571,38 +562,6 @@ class SSE_API:
         page_info = parsed.get("pageInfo") or parsed.get("meta") or {}
         return records, page_info
 
-    def RefreshS3BucketKey(self):
-        """
-        Rotate the Cisco-managed S3 bucket key for the organization.
-        POST admin/v2/iam/rotateKey. Requires admin.iam:write.
-        See: https://developer.cisco.com/docs/cloud-security/refresh-s3-bucket-key/
-        """
-        end_point = "iam/rotateKey"
-        res = self.Query(
-            scope=admin, end_point=end_point, operation=POST, request_data=None
-        )
-        data = self.ParseJsonResponse(res)
-        return data
-
-    def TerminateVPNSession(self, profile_name, region, sessions, usernames):
-        end_point_terminate_vpn_session = "vpn/userConnections"
-        terminate_vpn_session_object = {
-            "action": "disconnect",
-            "profileName": profile_name,
-            "region": region,
-            "sessions": sessions,
-            "usernames": usernames,
-        }
-        res = self.Query(
-            scope="admin",
-            end_point=end_point_terminate_vpn_session,
-            operation=POST,
-            request_data=terminate_vpn_session_object,
-        )
-        data = self.ParseJsonResponse(res)
-        data = data["data"]
-        return data
-
     def ListIdentities(self, registration_type):
         end_point_identities = f"identities/registrations/{registration_type}"
         res = self.QueryAllPages(
@@ -636,17 +595,6 @@ class SSE_API:
         res = self.Query(scope=admin, end_point=end_point, operation=GET)
         data = self.ParseJsonResponse(res)
         return data
-
-    def RevokeCertificatesForDevice(self, user_id, device_id):
-        """DELETE ztna/users/{userId}/devices/{deviceId} (admin/v2). Revokes active ACME certs and removes the device. Returns 204 No Content."""
-        end_point = f"ztna/users/{user_id}/devices/{device_id}"
-        res = self.Query(scope=admin, end_point=end_point, operation=DELETE)
-        if res.status_code == 204:
-            return {
-                "success": True,
-                "message": "Certificates revoked and device removed",
-            }
-        return self.ParseJsonResponse(res)
 
     def ListFirewallRules(self, offset=0, limit=10, rule_name=None, filters=None):
         """

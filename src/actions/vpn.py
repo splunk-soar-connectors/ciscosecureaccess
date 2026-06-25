@@ -14,9 +14,8 @@
 
 from soar_sdk.params import Params
 
-from ..core import Asset, _parse_comma_list, app
-from ..outputs import ListVPNSessionsOutput, TerminateVPNSessionOutput
-from ..params import TerminateVPNSessionParams
+from ..core import Asset, app
+from ..outputs import ListVPNSessionsOutput
 
 
 @app.action()
@@ -28,20 +27,3 @@ def list_vpn_sessions(params: Params, asset: Asset) -> ListVPNSessionsOutput:
     client = asset.get_client()
     vpn_sessions = client.ListVPNSessions()
     return ListVPNSessionsOutput(vpn_sessions=vpn_sessions)
-
-
-@app.action(read_only=False)
-def terminate_vpn_session(
-    params: TerminateVPNSessionParams, asset: Asset
-) -> TerminateVPNSessionOutput:
-    """
-    Terminate VPN Session.
-    https://developer.cisco.com/docs/cloud-security/disconnect-vpn-users/
-    """
-    usernames = _parse_comma_list(params.usernames)
-    sessions = _parse_comma_list(params.sessions)
-    client = asset.get_client()
-    terminate_vpn_session_response = client.TerminateVPNSession(
-        params.profile_name, params.region, sessions, usernames
-    )
-    return TerminateVPNSessionOutput(**terminate_vpn_session_response)

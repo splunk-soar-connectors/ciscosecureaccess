@@ -22,14 +22,12 @@ from ..outputs import (
     ListCertificatesForDeviceOutput,
     ListCertificatesForUserOutput,
     ListIdentitiesOutput,
-    RevokeCertificatesForDeviceOutput,
     UpdateIdentitiesOutput,
 )
 from ..params import (
     ListCertificatesForDeviceParams,
     ListCertificatesForUserParams,
     ListIdentitiesParams,
-    RevokeCertificatesForDeviceParams,
     UpdateIdentitiesParams,
 )
 
@@ -100,21 +98,4 @@ def list_certificates_for_user(
     return ListCertificatesForUserOutput(
         userId=data.get("userId"),
         devices=data.get("devices"),
-    )
-
-
-@app.action(read_only=False)
-def revoke_certificates_for_device(
-    params: RevokeCertificatesForDeviceParams, asset: Asset
-) -> RevokeCertificatesForDeviceOutput:
-    """
-    Revoke Certificates for Device (ZTNA).
-    DELETE /ztna/users/{userId}/devices/{deviceId}. Revokes active ACME-issued certificates and removes the zero trust user device.
-    https://developer.cisco.com/docs/cloud-security/revoke-certificates-for-device/
-    """
-    client = asset.get_client()
-    data = client.RevokeCertificatesForDevice(params.user_id, params.device_id)
-    return RevokeCertificatesForDeviceOutput(
-        success=data.get("success"),
-        message=data.get("message"),
     )
