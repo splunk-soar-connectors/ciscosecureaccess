@@ -383,8 +383,11 @@ class SSE_API:
         return res["data"]
 
     def ListVPNSessions(self):
-        res = self.QueryAllPages(
-            scope="admin", end_point="vpn/userConnections", operation=GET
+        res = self.QueryAllPagesOffset(
+            scope=admin,
+            end_point="vpn/userConnections",
+            operation=GET,
+            limit=1000,
         )
         data = res["data"]
         return data
@@ -564,8 +567,11 @@ class SSE_API:
 
     def ListIdentities(self, registration_type):
         end_point_identities = f"identities/registrations/{registration_type}"
-        res = self.QueryAllPages(
-            scope=deployments, end_point=end_point_identities, operation=GET
+        res = self.QueryAllPagesOffset(
+            scope=deployments,
+            end_point=end_point_identities,
+            operation=GET,
+            limit=250,
         )
         data = res["data"]
         return data
