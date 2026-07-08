@@ -58,7 +58,7 @@ repos:
       - id: detect-secrets
         args: ['--no-verify']
         exclude_types: [json]
-        exclude: "README.md"
+        exclude: "README.md|test/test_asset\\.json\\.example"
   # Central hooks
   - repo: https://github.com/phantomcyber/dev-cicd-tools
     rev: v2.1.4
@@ -85,4 +85,24 @@ repos:
       - id: static-tests
         language: python
         additional_dependencies: ["local-hooks"]
-        args: ['.']
+        # Omit registry checks until GUID is merged into dev-cicd-tools appid_to_* JSON.
+        args:
+          - "."
+          - "--empty_consts"
+          - "--get_opt_params"
+          - "--light_and_dark_theme_logos"
+          - "--python_package"
+          - "--extra_fields_app_json"
+          - "--sequential_order"
+          - "--main_module"
+          - "--min_platform_version"
+          - "--test_connectivity"
+          - "--action_param_prefixes"
+          - "--action_param_matching_contains"
+          - "--minimal_data_paths"
+          - "--pip313_dependencies"
+          - "--validate_json_schema"
+          - "--fields_should_be_passwords"
+          - "--malicious_html"
+          - "--xss_custom_views"
+          - "--splunk_supported_debug_print"

@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from .src import app
+
+"""SOAR connector entry point (legacy layout expected by CI static tests)."""
+
+from src.app import app
 
 __all__ = ["app"]
