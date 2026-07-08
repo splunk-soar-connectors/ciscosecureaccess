@@ -22,16 +22,14 @@ VARIABLE | REQUIRED | TYPE | DESCRIPTION
 
 ### Supported Actions
 
-[test connectivity](#action-test-connectivity) - Test connectivity against the Cisco Secure Access API.
-Get a token to ensure connectivity, and valid configuration.
-https://developer.cisco.com/docs/cloud-security/create-authorization-token/ <br>
-[list destination lists](#action-list-destination-lists) - List destination lists configured for the organization <br>
-[create destination list](#action-create-destination-list) - Create a destination list in the organization <br>
-[add to destination list](#action-add-to-destination-list) - Add a destination to a destination list <br>
-[remove destinations from list](#action-remove-destinations-from-list) - Remove destinations from a destination list <br>
-[list managed devices](#action-list-managed-devices) - List managed network devices in the organization <br>
-[delete managed device](#action-delete-managed-device) - Delete a managed network device by origin ID <br>
-[get network device](#action-get-network-device) - Get a managed network device by origin ID <br>
+[test connectivity](#action-test-connectivity) - Test OAuth authentication to Cisco Secure Access. <br>
+[list destination lists](#action-list-destination-lists) - List Cisco Secure Access destination lists. <br>
+[create destination list](#action-create-destination-list) - Create a Cisco Secure Access destination list. <br>
+[add to destination list](#action-add-to-destination-list) - Add one domain, URL, or IP destination to a destination list. <br>
+[remove destinations from list](#action-remove-destinations-from-list) - Remove one or more destination entries from a destination list. <br>
+[list managed devices](#action-list-managed-devices) - List managed network devices registered in Cisco Secure Access. <br>
+[delete managed device](#action-delete-managed-device) - Delete one managed network device by origin ID. <br>
+[get network device](#action-get-network-device) - Get details for one managed network device by origin ID. <br>
 [list virtual appliances](#action-list-virtual-appliances) - List virtual appliances in the organization <br>
 [list sites](#action-list-sites) - List sites in the organization <br>
 [get roaming computer](#action-get-roaming-computer) - Get posture and security details for a roaming computer <br>
@@ -44,26 +42,24 @@ https://developer.cisco.com/docs/cloud-security/create-authorization-token/ <br>
 [get passive dns](#action-get-passive-dns) - Get passive DNS records for a domain <br>
 [list identities](#action-list-identities) - List device or security group tag identities <br>
 [update identities](#action-update-identities) - Create or update device or security group tag identities <br>
-[list certificates for device](#action-list-certificates-for-device) - List ZTNA certificates for a user device <br>
-[list certificates for user](#action-list-certificates-for-user) - List ZTNA device certificates for a user <br>
-[make request](#action-make-request) - Make an HTTP request to any Cisco Secure Access API endpoint using the configured asset credentials. <br>
-[create rule](#action-create-rule) - Create an access rule in the organization's Access policy <br>
-[list firewall rules](#action-list-firewall-rules) - List access rules in the organization's Access policy <br>
-[list swg override device settings](#action-list-swg-override-device-settings) - List SWG override settings for managed devices <br>
-[set swg override device settings](#action-set-swg-override-device-settings) - Set SWG override settings for managed devices <br>
-[delete swg override device settings](#action-delete-swg-override-device-settings) - Delete SWG override settings for managed devices <br>
+[list certificates for device](#action-list-certificates-for-device) - List latest ZTNA certificates for a specific user device. <br>
+[list certificates for user](#action-list-certificates-for-user) - List latest ZTNA device certificates for a user. <br>
+[make request](#action-make-request) - Send an authenticated request to a Cisco Secure Access API endpoint. <br>
+[create rule](#action-create-rule) - Create an access policy rule. <br>
+[list firewall rules](#action-list-firewall-rules) - List access policy rules. <br>
+[list swg override device settings](#action-list-swg-override-device-settings) - List Cisco Secure Web Gateway override settings for managed devices. <br>
+[set swg override device settings](#action-set-swg-override-device-settings) - Set Cisco Secure Web Gateway override settings for managed devices. <br>
+[delete swg override device settings](#action-delete-swg-override-device-settings) - Delete Cisco Secure Web Gateway override settings for managed devices. <br>
 [list vpn sessions](#action-list-vpn-sessions) - List active VPN sessions
 
 ## action: 'test connectivity'
 
-Test connectivity against the Cisco Secure Access API.
-Get a token to ensure connectivity, and valid configuration.
-https://developer.cisco.com/docs/cloud-security/create-authorization-token/
+Test OAuth authentication to Cisco Secure Access.
 
 Type: **test** <br>
 Read only: **True**
 
-Basic test for app.
+Verifies that the configured asset can authenticate to Cisco Secure Access with OAuth credentials.
 
 #### Action Parameters
 
@@ -80,10 +76,12 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'list destination lists'
 
-List destination lists configured for the organization
+List Cisco Secure Access destination lists.
 
 Type: **generic** <br>
 Read only: **True**
+
+Lists destination list metadata. Set list_destinations to true to also fetch destination entries for each list. Use destination list IDs from this action when adding or removing destinations.
 
 #### Action Parameters
 
@@ -125,10 +123,12 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'create destination list'
 
-Create a destination list in the organization
+Create a Cisco Secure Access destination list.
 
 Type: **generic** <br>
 Read only: **False**
+
+Creates a non-global destination list for Access policies. The request sets isGlobal=false and bundleTypeId=2. Optional destinations_json must be a JSON array of no more than 500 domain, URL, or IPv4 destinations. Cisco Secure Access does not support creating thirdparty_block destination lists through this API.
 
 #### Action Parameters
 
@@ -174,10 +174,12 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'add to destination list'
 
-Add a destination to a destination list
+Add one domain, URL, or IP destination to a destination list.
 
 Type: **generic** <br>
 Read only: **False**
+
+Adds one destination entry per run. Provide a destination list ID from List Destination Lists, or configure a default destination list ID on the asset. The destination can be a domain, URL, or IP address.
 
 #### Action Parameters
 
@@ -224,10 +226,12 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'remove destinations from list'
 
-Remove destinations from a destination list
+Remove one or more destination entries from a destination list.
 
 Type: **generic** <br>
 Read only: **False**
+
+Removes destination entries by destination entry ID, not by destination value. Get entry IDs from List Destination Lists with list_destinations enabled or from Add To Destination List output. Provide a destination list ID or configure a default destination list ID on the asset.
 
 #### Action Parameters
 
@@ -271,10 +275,12 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'list managed devices'
 
-List managed network devices in the organization
+List managed network devices registered in Cisco Secure Access.
 
 Type: **generic** <br>
 Read only: **True**
+
+Lists Cisco Secure Access managed network devices. Use the originId returned by this action as the lookup or delete identifier for a device.
 
 #### Action Parameters
 
@@ -298,10 +304,12 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'delete managed device'
 
-Delete a managed network device by origin ID
+Delete one managed network device by origin ID.
 
 Type: **generic** <br>
 Read only: **False**
+
+Deletes a managed network device using its originId. Get the originId from List Managed Devices.
 
 #### Action Parameters
 
@@ -323,10 +331,12 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'get network device'
 
-Get a managed network device by origin ID
+Get details for one managed network device by origin ID.
 
 Type: **generic** <br>
 Read only: **True**
+
+Retrieves one managed network device using its originId. Get the originId from List Managed Devices.
 
 #### Action Parameters
 
@@ -733,6 +743,8 @@ List device or security group tag identities
 Type: **generic** <br>
 Read only: **True**
 
+Lists identities by type. Use type=device for device registrations or type=securityGroupTag for security group tag identities.
+
 #### Action Parameters
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
@@ -763,6 +775,8 @@ Create or update device or security group tag identities
 Type: **generic** <br>
 Read only: **False**
 
+Creates or updates 1-250 identity objects from identities_json. Use type=device for device registrations and type=securityGroupTag for security group tag identities. Device objects use key, label, status, and authName. Security group tag objects use key, label, status, and tagId. Set status to inactive to deactivate an identity.
+
 #### Action Parameters
 
 PARAMETER | REQUIRED | DESCRIPTION | TYPE | CONTAINS
@@ -784,10 +798,12 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'list certificates for device'
 
-List ZTNA certificates for a user device
+List latest ZTNA certificates for a specific user device.
 
 Type: **generic** <br>
 Read only: **True**
+
+Lists the latest ACME-issued ZTNA certificates for one user device by user ID and device ID.
 
 #### Action Parameters
 
@@ -815,10 +831,12 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'list certificates for user'
 
-List ZTNA device certificates for a user
+List latest ZTNA device certificates for a user.
 
 Type: **generic** <br>
 Read only: **True**
+
+Lists the latest ACME-issued ZTNA device certificates for all devices associated with the specified user ID.
 
 #### Action Parameters
 
@@ -845,12 +863,12 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'make request'
 
-Make an HTTP request to any Cisco Secure Access API endpoint using the configured asset credentials.
+Send an authenticated request to a Cisco Secure Access API endpoint.
 
 Type: **generic** <br>
 Read only: **False**
 
-'make request' action for the app. Used to handle arbitrary HTTP requests with the app's asset
+Sends an authenticated request using the asset's Cisco Secure Access OAuth credentials. Provide an API path relative to the configured base URL, such as deployments/v2/networkdevices. Do not include the base URL.
 
 #### Action Parameters
 
@@ -884,10 +902,12 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'create rule'
 
-Create an access rule in the organization's Access policy
+Create an access policy rule.
 
 Type: **generic** <br>
 Read only: **False**
+
+Creates an access policy rule. rule_conditions_json and rule_settings_json are required JSON arrays. rule_name must be unique and 2-50 characters.
 
 #### Action Parameters
 
@@ -935,10 +955,12 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'list firewall rules'
 
-List access rules in the organization's Access policy
+List access policy rules.
 
 Type: **generic** <br>
 Read only: **True**
+
+Lists access policy rules. Use rule_name or filters to narrow results when needed.
 
 #### Action Parameters
 
@@ -976,10 +998,12 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'list swg override device settings'
 
-List SWG override settings for managed devices
+List Cisco Secure Web Gateway override settings for managed devices.
 
 Type: **generic** <br>
 Read only: **True**
+
+Lists Cisco Secure Web Gateway override settings for 1-100 device origin IDs. Use origin IDs from managed or roaming device inventory.
 
 #### Action Parameters
 
@@ -1003,10 +1027,12 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'set swg override device settings'
 
-Set SWG override settings for managed devices
+Set Cisco Secure Web Gateway override settings for managed devices.
 
 Type: **generic** <br>
 Read only: **False**
+
+Sets Cisco Secure Web Gateway override settings for 1-100 device origin IDs. Use value 1 to enable Secure Web Gateway and value 0 to disable it for the specified devices.
 
 #### Action Parameters
 
@@ -1035,10 +1061,12 @@ summary.total_objects_successful | numeric | | 1 |
 
 ## action: 'delete swg override device settings'
 
-Delete SWG override settings for managed devices
+Delete Cisco Secure Web Gateway override settings for managed devices.
 
 Type: **generic** <br>
 Read only: **False**
+
+Deletes Cisco Secure Web Gateway override settings for 1-100 device origin IDs. After removal, the organization Secure Web Gateway setting applies.
 
 #### Action Parameters
 
