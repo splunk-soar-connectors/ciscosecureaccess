@@ -49,39 +49,82 @@ from .core import app, test_connectivity
 
 
 app.test_connectivity()(test_connectivity)
+test_connectivity_action = app.get_actions()["test_connectivity"]
+test_connectivity_action.meta.description = (
+    "Test OAuth authentication to Cisco Secure Access."
+)
+test_connectivity_action.meta.verbose = (
+    "Verifies that the configured asset can authenticate to Cisco Secure Access "
+    "with OAuth credentials."
+)
 
 app.register_action(
     list_destination_lists,
-    description="List destination lists configured for the organization",
+    description="List Cisco Secure Access destination lists.",
+    verbose=(
+        "Lists destination list metadata. Set list_destinations to true to also "
+        "fetch destination entries for each list. Use destination list IDs from "
+        "this action when adding or removing destinations."
+    ),
 )
 app.register_action(
     create_destination_list,
-    description="Create a destination list in the organization",
+    description="Create a Cisco Secure Access destination list.",
+    verbose=(
+        "Creates a non-global destination list for Access policies. The request "
+        "sets isGlobal=false and bundleTypeId=2. Optional destinations_json must "
+        "be a JSON array of no more than 500 domain, URL, or IPv4 destinations. "
+        "Cisco Secure Access does not support creating thirdparty_block "
+        "destination lists through this API."
+    ),
     read_only=False,
 )
 app.register_action(
     add_to_destination_list,
-    description="Add a destination to a destination list",
+    description="Add one domain, URL, or IP destination to a destination list.",
+    verbose=(
+        "Adds one destination entry per run. Provide a destination list ID from "
+        "List Destination Lists, or configure a default destination list ID on "
+        "the asset. The destination can be a domain, URL, or IP address."
+    ),
     read_only=False,
 )
 app.register_action(
     remove_destinations_from_list,
-    description="Remove destinations from a destination list",
+    description="Remove one or more destination entries from a destination list.",
+    verbose=(
+        "Removes destination entries by destination entry ID, not by destination "
+        "value. Get entry IDs from List Destination Lists with list_destinations "
+        "enabled or from Add To Destination List output. Provide a destination "
+        "list ID or configure a default destination list ID on the asset."
+    ),
     read_only=False,
 )
 
 app.register_action(
     list_managed_devices,
-    description="List managed network devices in the organization",
+    description="List managed network devices registered in Cisco Secure Access.",
+    verbose=(
+        "Lists Cisco Secure Access managed network devices. Use the originId "
+        "returned by this action as the lookup or delete identifier for a device."
+    ),
 )
 app.register_action(
     delete_managed_device,
-    description="Delete a managed network device by origin ID",
+    description="Delete one managed network device by origin ID.",
+    verbose=(
+        "Deletes a managed network device using its originId. Get the originId "
+        "from List Managed Devices."
+    ),
     read_only=False,
 )
 app.register_action(
     get_network_device,
-    description="Get a managed network device by origin ID",
+    description="Get details for one managed network device by origin ID.",
+    verbose=(
+        "Retrieves one managed network device using its originId. Get the "
+        "originId from List Managed Devices."
+    ),
 )
 app.register_action(
     list_virtual_appliances,
@@ -128,45 +171,96 @@ app.register_action(
 app.register_action(
     list_identities,
     description="List device or security group tag identities",
+    verbose=(
+        "Lists identities by type. Use type=device for device registrations or "
+        "type=securityGroupTag for security group tag identities."
+    ),
 )
 app.register_action(
     update_identities,
     description="Create or update device or security group tag identities",
+    verbose=(
+        "Creates or updates 1-250 identity objects from identities_json. Use "
+        "type=device for device registrations and type=securityGroupTag for "
+        "security group tag identities. Device objects use key, label, status, "
+        "and authName. Security group tag objects use key, label, status, and "
+        "tagId. Set status to inactive to deactivate an identity."
+    ),
     read_only=False,
 )
 app.register_action(
     list_certificates_for_device,
-    description="List ZTNA certificates for a user device",
+    description="List latest ZTNA certificates for a specific user device.",
+    verbose=(
+        "Lists the latest ACME-issued ZTNA certificates for one user device by "
+        "user ID and device ID."
+    ),
 )
 app.register_action(
     list_certificates_for_user,
-    description="List ZTNA device certificates for a user",
+    description="List latest ZTNA device certificates for a user.",
+    verbose=(
+        "Lists the latest ACME-issued ZTNA device certificates for all devices "
+        "associated with the specified user ID."
+    ),
 )
 
 app.make_request()(make_request)
+make_request_action = app.get_actions()["make_request"]
+make_request_action.meta.description = (
+    "Send an authenticated request to a Cisco Secure Access API endpoint."
+)
+make_request_action.meta.verbose = (
+    "Sends an authenticated request using the asset's Cisco Secure Access OAuth "
+    "credentials. Provide an API path relative to the configured base URL, such "
+    "as deployments/v2/networkdevices. Do not include the base URL."
+)
 
 app.register_action(
     create_rule,
-    description="Create an access rule in the organization's Access policy",
+    description="Create an access policy rule.",
+    verbose=(
+        "Creates an access policy rule. rule_conditions_json and "
+        "rule_settings_json are required JSON arrays. rule_name must be unique "
+        "and 2-50 characters."
+    ),
     read_only=False,
 )
 app.register_action(
     list_firewall_rules,
-    description="List access rules in the organization's Access policy",
+    description="List access policy rules.",
+    verbose=(
+        "Lists access policy rules. Use rule_name or filters to narrow results "
+        "when needed."
+    ),
 )
 
 app.register_action(
     list_swg_override_device_settings,
-    description="List SWG override settings for managed devices",
+    description="List Cisco Secure Web Gateway override settings for managed devices.",
+    verbose=(
+        "Lists Cisco Secure Web Gateway override settings for 1-100 device "
+        "origin IDs. Use origin IDs from managed or roaming device inventory."
+    ),
 )
 app.register_action(
     set_swg_override_device_settings,
-    description="Set SWG override settings for managed devices",
+    description="Set Cisco Secure Web Gateway override settings for managed devices.",
+    verbose=(
+        "Sets Cisco Secure Web Gateway override settings for 1-100 device "
+        "origin IDs. Use value 1 to enable Secure Web Gateway and value 0 to "
+        "disable it for the specified devices."
+    ),
     read_only=False,
 )
 app.register_action(
     delete_swg_override_device_settings,
-    description="Delete SWG override settings for managed devices",
+    description="Delete Cisco Secure Web Gateway override settings for managed devices.",
+    verbose=(
+        "Deletes Cisco Secure Web Gateway override settings for 1-100 device "
+        "origin IDs. After removal, the organization Secure Web Gateway setting "
+        "applies."
+    ),
     read_only=False,
 )
 
