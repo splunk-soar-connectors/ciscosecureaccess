@@ -45,7 +45,7 @@ contains the scope listed for that action below.
 | `list destination lists` | `policies.destinationLists:read` |
 | `list destination lists` with **list_destinations** enabled | `policies.destinationLists:read` and `policies.destinations:read` |
 | `create destination list` | `policies.destinationLists:write` |
-| `add to destination list` | `policies.destinations:write` |
+| `add to destination list` | `policies.destinations:write` and `policies.destinations:read` |
 | `remove destinations from list` | `policies.destinations:write` |
 | `list managed devices` | `deployments.networkdevices:read` |
 | `get network device` | `deployments.networkdevices:read` |
@@ -88,6 +88,47 @@ contains the scope listed for that action below.
   scope required by that endpoint.
 - If `list destination lists` succeeds but enabling **list_destinations** fails,
   verify that the API key also includes `policies.destinations:read`.
+
+## Verify API Access With curl
+
+When an action fails, customers can run curl from the SOAR host to verify
+whether the same Cisco Secure Access API call works outside the connector.
+Replace the placeholder values with the asset configuration values and use the
+same API path as the failed action.
+
+First verify that the credentials can get an OAuth token:
+
+```bash
+BASE_URL="https://api.sse.cisco.com"
+CLIENT_ID="<client_id>"
+CLIENT_SECRET="<client_secret>"
+
+curl -i -u "$CLIENT_ID:$CLIENT_SECRET" \
+  -X POST "$BASE_URL/auth/v2/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials"
+```
+
+If the token request succeeds, copy the `access_token` value and call the action
+endpoint directly. This example checks the same endpoint used by the `list managed devices` action:
+
+```bash
+ACCESS_TOKEN="<access_token>"
+
+curl -i -X GET "$BASE_URL/deployments/v2/networkdevices" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Accept: application/json"
+```
+
+For other failed actions, replace `/deployments/v2/networkdevices` with the API
+path for that action, such as `/policies/v2/destinationlists`. If curl fails
+with a TLS or certificate error before returning an HTTP status code, troubleshoot
+the network path from the SOAR host first, including TLS inspection, proxy
+configuration, firewall policy, and CA trust. If curl returns the same `401`,
+`403`, `404`, or validation error as SOAR, troubleshoot the Cisco credentials,
+scopes, endpoint path, payload, or network path. If curl succeeds but the SOAR
+action fails, review the SOAR asset settings, action parameters, SSL verification
+setting, and any proxy or firewall differences.
 
 ## Useful Cisco Documentation
 
