@@ -1,3 +1,3 @@
 **Unreleased**
 
-* Updated the list destination lists scope documentation for the `list_destinations` option.
+* Added documented Cisco Secure Access API permissions for all actions.
