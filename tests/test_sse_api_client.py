@@ -76,3 +76,20 @@ def test_passive_dns_forwards_pagination_and_returns_page_info(client):
     assert query.call_args.kwargs["params"] == {"offset": 20, "limit": 10}
     assert records == payload["records"]
     assert page_info == payload["pageInfo"]
+
+
+def test_make_request_verifies_tls_by_default(client):
+    with patch("src.sse_api_client.requests.request") as request:
+        client.MakeRequest(method="get", endpoint="deployments/v2/networkdevices")
+
+    assert request.call_args.kwargs["verify"] is True
+
+
+def test_query_uses_requests_tls_verification_default(client):
+    response = MagicMock()
+    response.raise_for_status.return_value = None
+
+    with patch("src.sse_api_client.requests.get", return_value=response) as request:
+        client.Query("deployments", "networkdevices", "get")
+
+    assert "verify" not in request.call_args.kwargs
