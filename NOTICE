@@ -3677,7 +3677,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 @@@@============================================================================
 
-Library: splunk-soar-sdk - 3.22.0
+Library: splunk-soar-sdk - 3.26.1
 Homepage: https://github.com/phantomcyber/splunk-soar-sdk
 License: Apache-2.0
 License Text:
@@ -4190,9 +4190,9 @@ License Text:
 
 @@@@============================================================================
 
-Library: typer - 0.21.1
+Library: typer - 0.17.5
 Homepage: https://github.com/fastapi/typer
-License: MIT
+License: MIT License
 License Text:
 
 The MIT License (MIT)
