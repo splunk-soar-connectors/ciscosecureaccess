@@ -1,7 +1,7 @@
 # Cisco Secure Access
 
 Publisher: Splunk <br>
-Connector Version: 1.0.0 <br>
+Connector Version: 1.0.1 <br>
 Product Vendor: Cisco <br>
 Product Name: Cisco Secure Access <br>
 Minimum Product Version: 7.0.0

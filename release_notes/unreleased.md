@@ -1,5 +1,1 @@
 **Unreleased**
-
-* Added documented Cisco Secure Access API permissions for all actions.
-* Added regression coverage confirming that HTTPS certificate verification remains enabled.
-* Updated the Splunk SOAR SDK dependency to 3.26.1.
