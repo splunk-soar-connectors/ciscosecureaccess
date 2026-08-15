@@ -60,6 +60,7 @@ test_connectivity_action.meta.verbose = (
 
 app.register_action(
     list_destination_lists,
+    read_only=True,
     description="List Cisco Secure Access destination lists.",
     verbose=(
         "Lists destination list metadata. Set list_destinations to true to also "
@@ -103,6 +104,7 @@ app.register_action(
 
 app.register_action(
     list_managed_devices,
+    read_only=True,
     description="List managed network devices registered in Cisco Secure Access.",
     verbose=(
         "Lists Cisco Secure Access managed network devices. Use the originId "
@@ -120,6 +122,7 @@ app.register_action(
 )
 app.register_action(
     get_network_device,
+    read_only=True,
     description="Get details for one managed network device by origin ID.",
     verbose=(
         "Retrieves one managed network device using its originId. Get the "
@@ -128,48 +131,59 @@ app.register_action(
 )
 app.register_action(
     list_virtual_appliances,
+    read_only=True,
     description="List virtual appliances in the organization",
 )
 app.register_action(
     list_sites,
+    read_only=True,
     description="List sites in the organization",
 )
 app.register_action(
     get_roaming_computer,
+    read_only=True,
     description="Get posture and security details for a roaming computer",
 )
 app.register_action(
     list_roaming_computers,
+    read_only=True,
     description="List roaming computers in the organization",
 )
 app.register_action(
     list_network_tunnel_groups,
+    read_only=True,
     description="List network tunnel groups in the organization",
 )
 app.register_action(
     get_network_tunnel_group,
+    read_only=True,
     description="Get a network tunnel group by ID",
 )
 app.register_action(
     list_resource_connectors,
+    read_only=True,
     description="List resource connectors in the organization",
 )
 
 app.register_action(
     get_domain_status,
+    read_only=True,
     description="Get the status and categorization of a domain",
 )
 app.register_action(
     get_domain_risk_score,
+    read_only=True,
     description="Get the risk score for a domain",
 )
 app.register_action(
     get_passive_dns,
+    read_only=True,
     description="Get passive DNS records for a domain",
 )
 
 app.register_action(
     list_identities,
+    read_only=True,
     description="List device or security group tag identities",
     verbose=(
         "Lists identities by type. Use type=device for device registrations or "
@@ -190,6 +204,7 @@ app.register_action(
 )
 app.register_action(
     list_certificates_for_device,
+    read_only=True,
     description="List latest ZTNA certificates for a specific user device.",
     verbose=(
         "Lists the latest ACME-issued ZTNA certificates for one user device by "
@@ -198,6 +213,7 @@ app.register_action(
 )
 app.register_action(
     list_certificates_for_user,
+    read_only=True,
     description="List latest ZTNA device certificates for a user.",
     verbose=(
         "Lists the latest ACME-issued ZTNA device certificates for all devices "
@@ -228,6 +244,7 @@ app.register_action(
 )
 app.register_action(
     list_firewall_rules,
+    read_only=True,
     description="List access policy rules.",
     verbose=(
         "Lists access policy rules. Use rule_name or filters to narrow results "
@@ -237,6 +254,7 @@ app.register_action(
 
 app.register_action(
     list_swg_override_device_settings,
+    read_only=True,
     description="List Cisco Secure Web Gateway override settings for managed devices.",
     verbose=(
         "Lists Cisco Secure Web Gateway override settings for 1-100 device "
@@ -266,6 +284,7 @@ app.register_action(
 
 app.register_action(
     list_vpn_sessions,
+    read_only=True,
     description="List active VPN sessions",
 )
 
