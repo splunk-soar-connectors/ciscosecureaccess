@@ -14,39 +14,34 @@
 
 from soar_sdk.app import App
 
-from .destination_lists import (
-    add_to_destination_list,
-    create_destination_list,
-    list_destination_lists,
-    remove_destinations_from_list,
-)
-from .devices import (
-    delete_managed_device,
-    get_network_device,
-    get_network_tunnel_group,
-    get_roaming_computer,
-    list_managed_devices,
-    list_network_tunnel_groups,
-    list_resource_connectors,
-    list_roaming_computers,
-    list_sites,
-    list_virtual_appliances,
-)
-from .domains import get_domain_risk_score, get_domain_status, get_passive_dns
-from .identities import (
-    list_certificates_for_device,
-    list_certificates_for_user,
-    list_identities,
-    update_identities,
-)
+from .add_to_destination_list import add_to_destination_list
+from .create_destination_list import create_destination_list
+from .create_rule import create_rule
+from .delete_managed_device import delete_managed_device
+from .delete_swg_override_device_settings import delete_swg_override_device_settings
+from .get_domain_risk_score import get_domain_risk_score
+from .get_domain_status import get_domain_status
+from .get_network_device import get_network_device
+from .get_network_tunnel_group import get_network_tunnel_group
+from .get_passive_dns import get_passive_dns
+from .get_roaming_computer import get_roaming_computer
+from .list_certificates_for_device import list_certificates_for_device
+from .list_certificates_for_user import list_certificates_for_user
+from .list_destination_lists import list_destination_lists
+from .list_firewall_rules import list_firewall_rules
+from .list_identities import list_identities
+from .list_managed_devices import list_managed_devices
+from .list_network_tunnel_groups import list_network_tunnel_groups
+from .list_resource_connectors import list_resource_connectors
+from .list_roaming_computers import list_roaming_computers
+from .list_sites import list_sites
+from .list_swg_override_device_settings import list_swg_override_device_settings
+from .list_virtual_appliances import list_virtual_appliances
+from .list_vpn_sessions import list_vpn_sessions
 from .make_request import make_request
-from .rules import create_rule, list_firewall_rules
-from .swg import (
-    delete_swg_override_device_settings,
-    list_swg_override_device_settings,
-    set_swg_override_device_settings,
-)
-from .vpn import list_vpn_sessions
+from .remove_destinations_from_list import remove_destinations_from_list
+from .set_swg_override_device_settings import set_swg_override_device_settings
+from .update_identities import update_identities
 
 
 def register_actions(app: App) -> App:

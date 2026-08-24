@@ -12,14 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .list_certificates_for_device import list_certificates_for_device
-from .list_certificates_for_user import list_certificates_for_user
-from .list_identities import list_identities
-from .update_identities import update_identities
+from soar_sdk.params import Params
 
-__all__ = [
-    "list_certificates_for_device",
-    "list_certificates_for_user",
-    "list_identities",
-    "update_identities",
-]
+from ..core import Asset
+from ..outputs import ListSitesOutput
+
+
+def list_sites(params: Params, asset: Asset) -> ListSitesOutput:
+    """
+    List all Sites in the organization.
+    GET deployments/v2/sites. Requires deployments.sites:read.
+    https://developer.cisco.com/docs/cloud-security/list-sites/
+    """
+    client = asset.get_client()
+    sites = client.ListSites()
+    if not isinstance(sites, list):
+        sites = [sites] if sites is not None else []
+    return ListSitesOutput(sites=sites)

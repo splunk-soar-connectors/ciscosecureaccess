@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .list_certificates_for_device import list_certificates_for_device
-from .list_certificates_for_user import list_certificates_for_user
-from .list_identities import list_identities
-from .update_identities import update_identities
+from soar_sdk.params import Params
 
-__all__ = [
-    "list_certificates_for_device",
-    "list_certificates_for_user",
-    "list_identities",
-    "update_identities",
-]
+from ..core import Asset
+from ..outputs import ListManagedDevicesOutput
+
+
+def list_managed_devices(params: Params, asset: Asset) -> ListManagedDevicesOutput:
+    """
+    List all valid IOA platforms.
+    https://developer.cisco.com/docs/cloud-security/list-network-devices/
+    """
+    client = asset.get_client()
+    devices = client.ListNetworkDevices()
+    return ListManagedDevicesOutput(devices=devices)
