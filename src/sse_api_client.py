@@ -106,6 +106,7 @@ class SSE_API:
         success = False
         base_uri = f"{self.base_url.rstrip('/')}/{scope}/v2"
         req = None
+        operation = operation.lower()
         if self.token is None:
             self.GetToken()
         while not success:
@@ -116,28 +117,7 @@ class SSE_API:
                     "Accept": "application/json",
                 }
 
-                if operation in GET:
-                    req = requests.get(
-                        f"{base_uri}/{end_point}",
-                        headers=api_headers,
-                        params=params,
-                        timeout=HTTP_REQUEST_TIMEOUT_SEC,
-                    )
-                elif operation in PATCH:
-                    req = requests.patch(
-                        f"{base_uri}/{end_point}",
-                        headers=api_headers,
-                        json=request_data,
-                        timeout=HTTP_REQUEST_TIMEOUT_SEC,
-                    )
-                elif operation in POST:
-                    req = requests.post(
-                        f"{base_uri}/{end_point}",
-                        headers=api_headers,
-                        json=request_data,
-                        timeout=HTTP_REQUEST_TIMEOUT_SEC,
-                    )
-                elif operation in POST_MULTIPART_FORM_DATA:
+                if operation == POST_MULTIPART_FORM_DATA:
                     # Content-Type is multipart/form-data
                     api_headers_multipart_form_data = {
                         self.auth_header_name: BEARER_PREFIX + self.token,
@@ -149,20 +129,17 @@ class SSE_API:
                         headers=api_headers_multipart_form_data,
                         timeout=HTTP_REQUEST_TIMEOUT_SEC,
                     )
-                elif operation in PUT:
-                    req = requests.put(
-                        f"{base_uri}/{end_point}",
+                elif operation in {GET, PATCH, POST, PUT, DELETE}:
+                    req = requests.request(
+                        method=operation.upper(),
+                        url=f"{base_uri}/{end_point}",
                         headers=api_headers,
+                        params=params,
                         json=request_data,
                         timeout=HTTP_REQUEST_TIMEOUT_SEC,
                     )
-                elif operation in DELETE:
-                    req = requests.delete(
-                        f"{base_uri}/{end_point}",
-                        headers=api_headers,
-                        json=request_data,
-                        timeout=HTTP_REQUEST_TIMEOUT_SEC,
-                    )
+                else:
+                    raise ValueError(f"Unsupported operation: {operation}")
                 req.raise_for_status()
                 success = True
             except TokenExpiredError:
@@ -331,8 +308,7 @@ class SSE_API:
 
     def ListNetworkDevices(self):
         res = self.Query(scope="deployments", end_point="networkdevices", operation=GET)
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def DeleteNetworkDevice(self, origin_id: int):
         """DELETE deployments/v2/networkdevices/{originId}. Remove a network device."""
@@ -389,8 +365,7 @@ class SSE_API:
             operation=GET,
             limit=1000,
         )
-        data = res["data"]
-        return data
+        return res["data"]
 
     def ListRoamingComputers(self):
         res = self.QueryAllPages(
@@ -406,8 +381,7 @@ class SSE_API:
         """GET deployments/v2/roamingcomputers/{deviceId}. Returns posture/security status for the device."""
         end_point = f"roamingcomputers/{device_id}"
         res = self.Query(scope=deployments, end_point=end_point, operation=GET)
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def ListSWGOverrideDeviceSettings(self, origin_ids: list):
         """
@@ -519,21 +493,17 @@ class SSE_API:
             operation=DELETE,
             request_data=destination_remove_object,
         )
-        data = self.ParseJsonResponse(res)
-        data = data["data"]
-        return data
+        return self.ParseJsonResponse(res)["data"]
 
     def GetDomainStatus(self, domain):
         end_point_domain = f"domains/categorization/{domain}?showLabels"
         res = self.Query(scope=investigate, end_point=end_point_domain, operation=GET)
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def GetDomainRiskScore(self, domain):
         end_point_domain = f"domains/risk-score/{domain}"
         res = self.Query(scope=investigate, end_point=end_point_domain, operation=GET)
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def GetPassiveDNS(self, domain, offset=0, limit=PDNS_DEFAULT_LIMIT):
         """
@@ -573,8 +543,7 @@ class SSE_API:
             operation=GET,
             limit=250,
         )
-        data = res["data"]
-        return data
+        return res["data"]
 
     def UpdateIdentities(self, identity_type, identities_list):
         """PUT identities/registrations/{type}. identity_type: 'device' or 'securityGroupTag'. identities_list: list of dicts (1-250)."""
@@ -585,22 +554,19 @@ class SSE_API:
             operation=PUT,
             request_data=identities_list,
         )
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def ListCertificatesForDevice(self, user_id, device_id):
         """GET ztna/users/{userId}/devices/{deviceId}/certificates (admin/v2). Returns deviceId and certificates list."""
         end_point = f"ztna/users/{user_id}/devices/{device_id}/certificates"
         res = self.Query(scope=admin, end_point=end_point, operation=GET)
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def ListCertificatesForUser(self, user_id):
         """GET ztna/users/{userId}/deviceCertificates (admin/v2). Returns userId and devices (each with deviceId, certificates)."""
         end_point = f"ztna/users/{user_id}/deviceCertificates"
         res = self.Query(scope=admin, end_point=end_point, operation=GET)
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def ListFirewallRules(self, offset=0, limit=10, rule_name=None, filters=None):
         """
@@ -617,8 +583,7 @@ class SSE_API:
         res = self.Query(
             scope=policies, end_point=end_point, operation=GET, params=params
         )
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def CreateRule(self, body):
         """
@@ -632,8 +597,7 @@ class SSE_API:
         res = self.Query(
             scope=policies, end_point=end_point, operation=POST, request_data=body
         )
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def ListNetworkTunnelGroups(
         self,
@@ -662,8 +626,7 @@ class SSE_API:
         res = self.Query(
             scope=deployments, end_point=end_point, operation=GET, params=params
         )
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def GetNetworkTunnelGroup(self, ntg_id: int):
         """
@@ -673,8 +636,7 @@ class SSE_API:
         """
         end_point = f"networktunnelgroups/{ntg_id}"
         res = self.Query(scope=deployments, end_point=end_point, operation=GET)
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def ListResourceConnectors(
         self,
@@ -701,5 +663,4 @@ class SSE_API:
         res = self.Query(
             scope=deployments, end_point=end_point, operation=GET, params=params
         )
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)

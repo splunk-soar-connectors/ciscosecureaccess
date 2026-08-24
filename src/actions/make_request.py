@@ -12,16 +12,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+
 from soar_sdk.action_results import MakeRequestOutput
 from soar_sdk.exceptions import ActionFailure
 
-from ..core import (
-    Asset,
-    _parse_make_request_body,
-    _parse_make_request_json_object,
-    _parse_make_request_query_parameters,
-)
+from ..core import Asset
 from ..params import CiscoSecureAccessMakeRequestParams
+
+
+def _parse_make_request_json_object(value: str | None, param_name: str) -> dict | None:
+    """Parse an optional make request JSON object parameter."""
+    if value is None or not str(value).strip():
+        return None
+    try:
+        parsed = json.loads(value)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise ActionFailure(
+            f"Invalid JSON in the {param_name} parameter: {value}"
+        ) from exc
+    if not isinstance(parsed, dict):
+        raise ActionFailure(f"The {param_name} parameter must be a JSON object.")
+    return parsed
+
+
+def _parse_make_request_query_parameters(
+    value: str | None,
+) -> tuple[dict | None, str | None]:
+    """Parse query parameters as a JSON object or pass through a raw query string."""
+    if value is None or not str(value).strip():
+        return None, None
+    try:
+        parsed = json.loads(value)
+    except (json.JSONDecodeError, TypeError):
+        return None, str(value).lstrip("?")
+    if not isinstance(parsed, dict):
+        raise ActionFailure("The query_parameters parameter must be a JSON object.")
+    return parsed, None
+
+
+def _parse_make_request_body(value: str | None):
+    """Parse an optional make request JSON body."""
+    if value is None or not str(value).strip():
+        return None
+    try:
+        return json.loads(value)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise ActionFailure(f"Invalid JSON in the body parameter: {value}") from exc
 
 
 def make_request(

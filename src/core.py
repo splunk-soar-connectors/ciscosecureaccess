@@ -14,10 +14,8 @@
 
 import json
 
-from soar_sdk.app import App
 from soar_sdk.asset import AssetField
 from soar_sdk.asset import BaseAsset
-from soar_sdk.exceptions import ActionFailure
 
 from .sse_api_client import SSE_API
 
@@ -43,46 +41,6 @@ def _parse_json_param(value: str, param_name: str, *, allow_list: bool = False):
     if allow_list and not isinstance(parsed, list):
         raise ValueError(f"{param_name} must be a JSON array")
     return parsed
-
-
-def _parse_make_request_json_object(value: str | None, param_name: str) -> dict | None:
-    """Parse an optional make request JSON object parameter."""
-    if value is None or not str(value).strip():
-        return None
-    try:
-        parsed = json.loads(value)
-    except (json.JSONDecodeError, TypeError) as exc:
-        raise ActionFailure(
-            f"Invalid JSON in the {param_name} parameter: {value}"
-        ) from exc
-    if not isinstance(parsed, dict):
-        raise ActionFailure(f"The {param_name} parameter must be a JSON object.")
-    return parsed
-
-
-def _parse_make_request_query_parameters(
-    value: str | None,
-) -> tuple[dict | None, str | None]:
-    """Parse query parameters as a JSON object or pass through a raw query string."""
-    if value is None or not str(value).strip():
-        return None, None
-    try:
-        parsed = json.loads(value)
-    except (json.JSONDecodeError, TypeError):
-        return None, str(value).lstrip("?")
-    if not isinstance(parsed, dict):
-        raise ActionFailure("The query_parameters parameter must be a JSON object.")
-    return parsed, None
-
-
-def _parse_make_request_body(value: str | None):
-    """Parse an optional make request JSON body."""
-    if value is None or not str(value).strip():
-        return None
-    try:
-        return json.loads(value)
-    except (json.JSONDecodeError, TypeError) as exc:
-        raise ActionFailure(f"Invalid JSON in the body parameter: {value}") from exc
 
 
 def _parse_optional_filters(params) -> dict | None:
@@ -282,20 +240,6 @@ class Asset(BaseAsset):
             self.client_secret,
             auth_header_name=self.auth_header_name,
         )
-
-
-app = App(
-    name="Cisco Secure Access",
-    app_type="information",
-    logo="logo.svg",
-    logo_dark="logo_dark.svg",
-    product_vendor="Cisco",
-    product_name="Cisco Secure Access",
-    publisher="Splunk",
-    appid="48ce45b2-0de5-474f-be52-8266350325cd",
-    fips_compliant=False,
-    asset_cls=Asset,
-)
 
 
 def test_connectivity(asset: Asset) -> None:

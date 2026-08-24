@@ -89,7 +89,17 @@ def test_query_uses_requests_tls_verification_default(client):
     response = MagicMock()
     response.raise_for_status.return_value = None
 
-    with patch("src.sse_api_client.requests.get", return_value=response) as request:
-        client.Query("deployments", "networkdevices", "get")
+    with patch("src.sse_api_client.requests.request", return_value=response) as request:
+        client.Query("deployments", "networkdevices", "GET")
 
     assert "verify" not in request.call_args.kwargs
+    assert request.call_args.kwargs["method"] == "GET"
+    assert (
+        request.call_args.kwargs["url"]
+        == "https://api.sse.cisco.com/deployments/v2/networkdevices"
+    )
+
+
+def test_query_rejects_unsupported_operation(client):
+    with pytest.raises(ValueError, match="Unsupported operation: trace"):
+        client.Query("deployments", "networkdevices", "TRACE")
