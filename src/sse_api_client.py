@@ -28,11 +28,13 @@ or implied.
 """
 
 import json
+
 import requests
 from oauthlib.oauth2 import BackendApplicationClient
 from oauthlib.oauth2 import TokenExpiredError
-from requests_oauthlib import OAuth2Session
+from requests import HTTPError
 from requests.auth import HTTPBasicAuth
+from requests_oauthlib import OAuth2Session
 
 
 # key scopes
@@ -80,6 +82,15 @@ class SSE_API:
         self.auth_header_name = auth_header_name
         self.token = None
 
+    def _headers(self, *, content_type: str | None = "application/json") -> dict:
+        headers = {
+            self.auth_header_name: BEARER_PREFIX + self.token,
+            "Accept": "application/json",
+        }
+        if content_type is not None:
+            headers["Content-Type"] = content_type
+        return headers
+
     def GetToken(self):
         auth = HTTPBasicAuth(self.client_id, self.client_secret)
         client = BackendApplicationClient(client_id=self.client_id)
@@ -93,7 +104,7 @@ class SSE_API:
         self.token = token_response.get("access_token")
         return self.token
 
-    def Query(
+    def request(
         self,
         scope,
         end_point,
@@ -102,76 +113,55 @@ class SSE_API:
         files=None,
         encoder=None,
         params=None,
-    ):
-        success = False
+    ) -> requests.Response:
         base_uri = f"{self.base_url.rstrip('/')}/{scope}/v2"
-        req = None
+        request_url = f"{base_uri}/{str(end_point).lstrip('/')}"
+        operation = operation.lower()
         if self.token is None:
             self.GetToken()
-        while not success:
-            try:
-                api_headers = {
-                    self.auth_header_name: BEARER_PREFIX + self.token,
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                }
 
-                if operation in GET:
-                    req = requests.get(
-                        f"{base_uri}/{end_point}",
-                        headers=api_headers,
-                        params=params,
-                        timeout=HTTP_REQUEST_TIMEOUT_SEC,
-                    )
-                elif operation in PATCH:
-                    req = requests.patch(
-                        f"{base_uri}/{end_point}",
-                        headers=api_headers,
-                        json=request_data,
-                        timeout=HTTP_REQUEST_TIMEOUT_SEC,
-                    )
-                elif operation in POST:
+        for attempt in range(2):
+            try:
+                if operation == POST_MULTIPART_FORM_DATA:
                     req = requests.post(
-                        f"{base_uri}/{end_point}",
-                        headers=api_headers,
-                        json=request_data,
-                        timeout=HTTP_REQUEST_TIMEOUT_SEC,
-                    )
-                elif operation in POST_MULTIPART_FORM_DATA:
-                    # Content-Type is multipart/form-data
-                    api_headers_multipart_form_data = {
-                        self.auth_header_name: BEARER_PREFIX + self.token,
-                        "Content-Type": encoder.content_type,
-                    }
-                    req = requests.post(
-                        f"{base_uri}/{end_point}",
+                        request_url,
                         data=request_data,
-                        headers=api_headers_multipart_form_data,
+                        files=files,
+                        headers=self._headers(content_type=encoder.content_type),
                         timeout=HTTP_REQUEST_TIMEOUT_SEC,
                     )
-                elif operation in PUT:
-                    req = requests.put(
-                        f"{base_uri}/{end_point}",
-                        headers=api_headers,
+                elif operation in {GET, PATCH, POST, PUT, DELETE}:
+                    req = requests.request(
+                        method=operation.upper(),
+                        url=request_url,
+                        headers=self._headers(),
+                        params=params,
                         json=request_data,
                         timeout=HTTP_REQUEST_TIMEOUT_SEC,
                     )
-                elif operation in DELETE:
-                    req = requests.delete(
-                        f"{base_uri}/{end_point}",
-                        headers=api_headers,
-                        json=request_data,
-                        timeout=HTTP_REQUEST_TIMEOUT_SEC,
-                    )
+                else:
+                    raise ValueError(f"Unsupported operation: {operation}")
                 req.raise_for_status()
-                success = True
+                return req
             except TokenExpiredError:
                 self.GetToken()
-            except Exception as e:
-                raise (e)
-        return req
+            except HTTPError as exc:
+                response = exc.response
+                if (
+                    attempt == 0
+                    and response is not None
+                    and response.status_code == 401
+                ):
+                    self.GetToken()
+                    continue
+                raise
 
-    def QueryAllPages(
+        raise RuntimeError("Unable to complete API request after token refresh")
+
+    def request_json(self, *args, **kwargs):
+        return self.request(*args, **kwargs).json()
+
+    def request_all_pages(
         self,
         scope,
         end_point,
@@ -191,13 +181,12 @@ class SSE_API:
         last_status = None
         last_meta = {}
         while True:
-            res = self.Query(
+            parsed = self.request_json(
                 scope=scope,
                 end_point=end_point,
                 operation=operation,
                 params={"page": page, "limit": limit},
             )
-            parsed = self.ParseJsonResponse(res)
             if response_is_array:
                 chunk = (
                     parsed
@@ -239,7 +228,7 @@ class SSE_API:
             "data": all_data,
         }
 
-    def QueryAllPagesOffset(
+    def request_all_offset_pages(
         self,
         scope,
         end_point,
@@ -256,13 +245,12 @@ class SSE_API:
         total = None
         last_response = {}
         while True:
-            res = self.Query(
+            parsed = self.request_json(
                 scope=scope,
                 end_point=end_point,
                 operation=operation,
                 params={"offset": offset, "limit": limit},
             )
-            parsed = self.ParseJsonResponse(res)
             last_response = parsed if isinstance(parsed, dict) else {}
             chunk = last_response.get(data_key) or []
             if not isinstance(chunk, list):
@@ -284,6 +272,68 @@ class SSE_API:
             "limit": limit,
             "total": total if total is not None else len(all_data),
         }
+
+    def Query(
+        self,
+        scope,
+        end_point,
+        operation,
+        request_data=None,
+        files=None,
+        encoder=None,
+        params=None,
+    ):
+        return self.request(
+            scope=scope,
+            end_point=end_point,
+            operation=operation,
+            request_data=request_data,
+            files=files,
+            encoder=encoder,
+            params=params,
+        )
+
+    def QueryAllPages(
+        self,
+        scope,
+        end_point,
+        operation=GET,
+        limit=100,
+        response_is_array=False,
+    ):
+        """
+        Fetch all pages of a 1-based page-numbered endpoint and return the combined result.
+
+        response_is_array: True when the body is a raw list rather than a
+        {data/records, meta} object.
+        """
+        return self.request_all_pages(
+            scope=scope,
+            end_point=end_point,
+            operation=operation,
+            limit=limit,
+            response_is_array=response_is_array,
+        )
+
+    def QueryAllPagesOffset(
+        self,
+        scope,
+        end_point,
+        operation=GET,
+        limit=100,
+        data_key="data",
+    ):
+        """
+        GET all pages of an offset/limit paged endpoint and return the combined result.
+        Response shape: { data_key: [...], total: N, offset: ..., limit: ..., ... }.
+        """
+        return self.request_all_offset_pages(
+            scope=scope,
+            end_point=end_point,
+            operation=operation,
+            limit=limit,
+            data_key=data_key,
+        )
 
     def ParseJsonResponse(self, res: requests.Response):
         json_response = res.json()
@@ -331,8 +381,7 @@ class SSE_API:
 
     def ListNetworkDevices(self):
         res = self.Query(scope="deployments", end_point="networkdevices", operation=GET)
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def DeleteNetworkDevice(self, origin_id: int):
         """DELETE deployments/v2/networkdevices/{originId}. Remove a network device."""
@@ -389,8 +438,7 @@ class SSE_API:
             operation=GET,
             limit=1000,
         )
-        data = res["data"]
-        return data
+        return res["data"]
 
     def ListRoamingComputers(self):
         res = self.QueryAllPages(
@@ -406,8 +454,7 @@ class SSE_API:
         """GET deployments/v2/roamingcomputers/{deviceId}. Returns posture/security status for the device."""
         end_point = f"roamingcomputers/{device_id}"
         res = self.Query(scope=deployments, end_point=end_point, operation=GET)
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def ListSWGOverrideDeviceSettings(self, origin_ids: list):
         """
@@ -519,21 +566,17 @@ class SSE_API:
             operation=DELETE,
             request_data=destination_remove_object,
         )
-        data = self.ParseJsonResponse(res)
-        data = data["data"]
-        return data
+        return self.ParseJsonResponse(res)["data"]
 
     def GetDomainStatus(self, domain):
         end_point_domain = f"domains/categorization/{domain}?showLabels"
         res = self.Query(scope=investigate, end_point=end_point_domain, operation=GET)
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def GetDomainRiskScore(self, domain):
         end_point_domain = f"domains/risk-score/{domain}"
         res = self.Query(scope=investigate, end_point=end_point_domain, operation=GET)
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def GetPassiveDNS(self, domain, offset=0, limit=PDNS_DEFAULT_LIMIT):
         """
@@ -554,13 +597,12 @@ class SSE_API:
         limit = min(limit, PDNS_MAX_LIMIT)
         if not isinstance(offset, int) or offset < 0:
             offset = 0
-        res = self.Query(
+        parsed = self.request_json(
             scope=investigate,
             end_point=end_point_domain,
             operation=GET,
             params={"offset": offset, "limit": limit},
         )
-        parsed = self.ParseJsonResponse(res)
         records = parsed.get("records") or parsed.get("data") or []
         page_info = parsed.get("pageInfo") or parsed.get("meta") or {}
         return records, page_info
@@ -573,8 +615,7 @@ class SSE_API:
             operation=GET,
             limit=250,
         )
-        data = res["data"]
-        return data
+        return res["data"]
 
     def UpdateIdentities(self, identity_type, identities_list):
         """PUT identities/registrations/{type}. identity_type: 'device' or 'securityGroupTag'. identities_list: list of dicts (1-250)."""
@@ -585,22 +626,19 @@ class SSE_API:
             operation=PUT,
             request_data=identities_list,
         )
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def ListCertificatesForDevice(self, user_id, device_id):
         """GET ztna/users/{userId}/devices/{deviceId}/certificates (admin/v2). Returns deviceId and certificates list."""
         end_point = f"ztna/users/{user_id}/devices/{device_id}/certificates"
         res = self.Query(scope=admin, end_point=end_point, operation=GET)
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def ListCertificatesForUser(self, user_id):
         """GET ztna/users/{userId}/deviceCertificates (admin/v2). Returns userId and devices (each with deviceId, certificates)."""
         end_point = f"ztna/users/{user_id}/deviceCertificates"
         res = self.Query(scope=admin, end_point=end_point, operation=GET)
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def ListFirewallRules(self, offset=0, limit=10, rule_name=None, filters=None):
         """
@@ -617,8 +655,7 @@ class SSE_API:
         res = self.Query(
             scope=policies, end_point=end_point, operation=GET, params=params
         )
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def CreateRule(self, body):
         """
@@ -632,8 +669,7 @@ class SSE_API:
         res = self.Query(
             scope=policies, end_point=end_point, operation=POST, request_data=body
         )
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def ListNetworkTunnelGroups(
         self,
@@ -662,8 +698,7 @@ class SSE_API:
         res = self.Query(
             scope=deployments, end_point=end_point, operation=GET, params=params
         )
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def GetNetworkTunnelGroup(self, ntg_id: int):
         """
@@ -673,8 +708,7 @@ class SSE_API:
         """
         end_point = f"networktunnelgroups/{ntg_id}"
         res = self.Query(scope=deployments, end_point=end_point, operation=GET)
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)
 
     def ListResourceConnectors(
         self,
@@ -701,5 +735,4 @@ class SSE_API:
         res = self.Query(
             scope=deployments, end_point=end_point, operation=GET, params=params
         )
-        data = self.ParseJsonResponse(res)
-        return data
+        return self.ParseJsonResponse(res)

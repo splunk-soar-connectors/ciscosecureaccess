@@ -15,6 +15,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 from src.sse_api_client import SSE_API
 
@@ -22,6 +23,7 @@ from src.sse_api_client import SSE_API
 def _json_response(payload):
     response = MagicMock()
     response.json.return_value = payload
+    response.raise_for_status.return_value = None
     return response
 
 
@@ -30,6 +32,43 @@ def client():
     api = SSE_API("https://api.sse.cisco.com", "client-id", "client-secret")
     api.token = "test-token"
     return api
+
+
+def test_request_normalizes_method_url_and_forwards_request_options():
+    api = SSE_API("https://api.sse.cisco.com/", "client-id", "client-secret")
+    api.token = "test-token"
+    response = _json_response({"ok": True})
+
+    with patch("src.sse_api_client.requests.request", return_value=response) as request:
+        result = api.request(
+            scope="deployments",
+            end_point="/networkdevices",
+            operation="post",
+            request_data={"name": "device"},
+            params={"limit": 10},
+        )
+
+    assert result is response
+    request.assert_called_once_with(
+        method="POST",
+        url="https://api.sse.cisco.com/deployments/v2/networkdevices",
+        headers={
+            "Authorization": "Bearer test-token",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        },
+        params={"limit": 10},
+        json={"name": "device"},
+        timeout=60,
+    )
+    response.raise_for_status.assert_called_once_with()
+
+
+def test_request_json_returns_parsed_json(client):
+    with patch.object(client, "request", return_value=_json_response({"ok": True})):
+        assert client.request_json(
+            scope="deployments", end_point="networkdevices", operation="GET"
+        ) == {"ok": True}
 
 
 @pytest.mark.parametrize(
@@ -45,18 +84,127 @@ def test_array_list_actions_fetch_all_numbered_pages(client, method_name, item_k
 
     with patch.object(
         client,
-        "Query",
-        side_effect=[_json_response(page_one), _json_response(page_two)],
-    ) as query:
+        "request_json",
+        side_effect=[page_one, page_two],
+    ) as request_json:
         result = getattr(client, method_name)()
 
-    assert [call.kwargs["params"] for call in query.call_args_list] == [
+    assert [call.kwargs["params"] for call in request_json.call_args_list] == [
         {"page": 1, "limit": 100},
         {"page": 2, "limit": 100},
     ]
     assert len(result) == 125
     assert result[0][item_key] == 0
     assert result[-1][item_key] == 124
+
+
+def test_request_all_pages_stops_when_total_reached(client):
+    with patch.object(
+        client,
+        "request_json",
+        side_effect=[
+            {"status": "ok", "meta": {"limit": 1, "total": 2}, "data": [{"id": 1}]},
+            {"status": "ok", "meta": {"limit": 1, "total": 2}, "data": [{"id": 2}]},
+        ],
+    ) as request_json:
+        result = client.request_all_pages(
+            scope="policies", end_point="destinationlists", limit=1
+        )
+
+    assert [call.kwargs["params"] for call in request_json.call_args_list] == [
+        {"page": 1, "limit": 1},
+        {"page": 2, "limit": 1},
+    ]
+    assert result["data"] == [{"id": 1}, {"id": 2}]
+    assert result["meta"]["total"] == 2
+
+
+def test_request_all_pages_stops_when_has_more_records_false(client):
+    with patch.object(
+        client,
+        "request_json",
+        return_value={
+            "status": "ok",
+            "pageInfo": {
+                "limit": 1,
+                "totalNumRecords": 10,
+                "hasMoreRecords": False,
+            },
+            "records": [{"id": 1}],
+        },
+    ) as request_json:
+        result = client.request_all_pages(
+            scope="investigate", end_point="pdns/name/example.com", limit=1
+        )
+
+    request_json.assert_called_once()
+    assert result["data"] == [{"id": 1}]
+    assert result["meta"]["total"] == 10
+
+
+def test_request_all_pages_handles_raw_array_short_page(client):
+    with patch.object(client, "request_json", return_value=[{"id": 1}]):
+        result = client.request_all_pages(
+            scope="deployments",
+            end_point="sites",
+            limit=100,
+            response_is_array=True,
+        )
+
+    assert result["data"] == [{"id": 1}]
+    assert result["meta"]["limit"] == 1
+
+
+def test_request_all_offset_pages_advances_offset_and_coerces_non_list(client):
+    with patch.object(
+        client,
+        "request_json",
+        side_effect=[
+            {"data": [{"id": 1}], "total": 2},
+            {"data": {"id": 2}, "total": 2},
+        ],
+    ) as request_json:
+        result = client.request_all_offset_pages(
+            scope="admin", end_point="vpn/userConnections", limit=1
+        )
+
+    assert [call.kwargs["params"] for call in request_json.call_args_list] == [
+        {"offset": 0, "limit": 1},
+        {"offset": 1, "limit": 1},
+    ]
+    assert result["data"] == [{"id": 1}, {"id": 2}]
+    assert result["offset"] == 0
+    assert result["limit"] == 1
+    assert result["total"] == 2
+
+
+def test_request_refreshes_token_once_on_401(client):
+    unauthorized = requests.Response()
+    unauthorized.status_code = 401
+    unauthorized.url = "https://api.sse.cisco.com/deployments/v2/networkdevices"
+    unauthorized._content = b"unauthorized"
+    unauthorized_error = requests.HTTPError("401 Client Error", response=unauthorized)
+
+    first_response = MagicMock()
+    first_response.raise_for_status.side_effect = unauthorized_error
+    second_response = _json_response({"ok": True})
+
+    def refresh_token():
+        client.token = "refreshed-token"
+        return client.token
+
+    with (
+        patch("src.sse_api_client.requests.request") as request,
+        patch.object(client, "GetToken", side_effect=refresh_token) as get_token,
+    ):
+        request.side_effect = [first_response, second_response]
+        result = client.request("deployments", "networkdevices", "GET")
+
+    assert result is second_response
+    assert get_token.call_count == 1
+    assert [
+        call.kwargs["headers"]["Authorization"] for call in request.call_args_list
+    ] == ["Bearer test-token", "Bearer refreshed-token"]
 
 
 def test_passive_dns_forwards_pagination_and_returns_page_info(client):
@@ -70,10 +218,10 @@ def test_passive_dns_forwards_pagination_and_returns_page_info(client):
         },
     }
 
-    with patch.object(client, "Query", return_value=_json_response(payload)) as query:
+    with patch.object(client, "request_json", return_value=payload) as request_json:
         records, page_info = client.GetPassiveDNS("example.com", offset=20, limit=10)
 
-    assert query.call_args.kwargs["params"] == {"offset": 20, "limit": 10}
+    assert request_json.call_args.kwargs["params"] == {"offset": 20, "limit": 10}
     assert records == payload["records"]
     assert page_info == payload["pageInfo"]
 
@@ -89,7 +237,34 @@ def test_query_uses_requests_tls_verification_default(client):
     response = MagicMock()
     response.raise_for_status.return_value = None
 
-    with patch("src.sse_api_client.requests.get", return_value=response) as request:
-        client.Query("deployments", "networkdevices", "get")
+    with patch("src.sse_api_client.requests.request", return_value=response) as request:
+        client.Query("deployments", "networkdevices", "GET")
 
     assert "verify" not in request.call_args.kwargs
+    assert request.call_args.kwargs["method"] == "GET"
+    assert (
+        request.call_args.kwargs["url"]
+        == "https://api.sse.cisco.com/deployments/v2/networkdevices"
+    )
+
+
+def test_query_rejects_unsupported_operation(client):
+    with pytest.raises(ValueError, match="Unsupported operation: trace"):
+        client.Query("deployments", "networkdevices", "TRACE")
+
+
+def test_query_wrapper_returns_raw_response(client):
+    response = _json_response({"ok": True})
+    with patch.object(client, "request", return_value=response) as request:
+        result = client.Query("deployments", "networkdevices", "GET")
+
+    assert result is response
+    request.assert_called_once_with(
+        scope="deployments",
+        end_point="networkdevices",
+        operation="GET",
+        request_data=None,
+        files=None,
+        encoder=None,
+        params=None,
+    )
