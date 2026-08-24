@@ -15,6 +15,7 @@
 from ..core import Asset, _destinations_for_create_destination_list, flatten_field
 from ..outputs import CreateDestinationListOutput
 from ..params import CreateDestinationListParams
+from ..sse_api_client import POST, policies
 
 
 def create_destination_list(
@@ -41,7 +42,12 @@ def create_destination_list(
         body["destinations"] = destinations
 
     client = asset.get_client()
-    raw = client.CreateDestinationList(body)
+    raw = client.request_json(
+        scope=policies,
+        end_point="destinationlists",
+        operation=POST,
+        request_data=body,
+    )
     if not isinstance(raw, dict):
         raise ValueError("Unexpected API response for create destination list")
     data = raw.get("data", raw)

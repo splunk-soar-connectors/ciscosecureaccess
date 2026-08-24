@@ -16,6 +16,7 @@ from soar_sdk.params import Params
 
 from ..core import Asset
 from ..outputs import ListVPNSessionsOutput
+from ..sse_api_client import GET, admin
 
 
 def list_vpn_sessions(params: Params, asset: Asset) -> ListVPNSessionsOutput:
@@ -24,5 +25,11 @@ def list_vpn_sessions(params: Params, asset: Asset) -> ListVPNSessionsOutput:
     https://developer.cisco.com/docs/cloud-security/list-vpn-connections/
     """
     client = asset.get_client()
-    vpn_sessions = client.ListVPNSessions()
+    result = client.request_all_offset_pages(
+        scope=admin,
+        end_point="vpn/userConnections",
+        operation=GET,
+        limit=1000,
+    )
+    vpn_sessions = result["data"]
     return ListVPNSessionsOutput(vpn_sessions=vpn_sessions)

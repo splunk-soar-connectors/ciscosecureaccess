@@ -15,6 +15,7 @@
 from ..core import Asset, _parse_comma_list
 from ..outputs import RemoveDestinationsFromListOutput
 from ..params import RemoveDestinationsFromListParams
+from ..sse_api_client import DELETE, policies
 
 
 def remove_destinations_from_list(
@@ -33,7 +34,11 @@ def remove_destinations_from_list(
     if not destination_list_id:
         raise ValueError("Destination list ID is required")
     destination_ids = _parse_comma_list(params.destination_ids)
-    destination_list_response = client.RemoveDestinationsFromList(
-        destination_list_id, destination_ids
+    destination_list_response = client.request_json(
+        scope=policies,
+        end_point=f"destinationlists/{destination_list_id}/destinations/remove",
+        operation=DELETE,
+        request_data=destination_ids,
     )
+    destination_list_response = destination_list_response["data"]
     return RemoveDestinationsFromListOutput(destinationList=destination_list_response)

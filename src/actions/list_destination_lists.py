@@ -15,6 +15,7 @@
 from ..core import Asset, flatten_field
 from ..outputs import ListDestinationListsOutput
 from ..params import ListDestinationListsParams
+from ..sse_api_client import GET, policies
 
 
 def list_destination_lists(
@@ -25,12 +26,20 @@ def list_destination_lists(
     https://developer.cisco.com/docs/cloud-security/get-destination-lists/
     """
     client = asset.get_client()
-    destination_lists = client.ListDestinationLists()
+    destination_list_response = client.request_all_pages(
+        scope=policies, end_point="destinationlists", operation=GET
+    )
+    destination_lists = destination_list_response["data"]
     destination_lists = flatten_field(destination_lists, "meta")
     if params.list_destinations:
         destination_lists_output = []
         for destination_list in destination_lists:
-            destinations = client.GetDestinationsFromListById(destination_list["id"])
+            destinations_response = client.request_all_pages(
+                scope=policies,
+                end_point=f"destinationlists/{destination_list['id']}/destinations",
+                operation=GET,
+            )
+            destinations = destinations_response["data"]
             destination_list["destinations"] = destinations
             destination_lists_output.append(destination_list)
     else:

@@ -16,6 +16,7 @@ from soar_sdk.params import Params
 
 from ..core import Asset
 from ..outputs import ListVirtualAppliancesOutput
+from ..sse_api_client import GET, deployments
 
 
 def list_virtual_appliances(
@@ -26,7 +27,14 @@ def list_virtual_appliances(
     https://developer.cisco.com/docs/cloud-security/list-virtual-appliances/
     """
     client = asset.get_client()
-    virtual_appliances = client.ListVirtualAppliances()
+    result = client.request_all_pages(
+        scope=deployments,
+        end_point="virtualappliances",
+        operation=GET,
+        limit=100,
+        response_is_array=True,
+    )
+    virtual_appliances = result["data"]
     for appliance in virtual_appliances or []:
         state = appliance.get("state")
         if isinstance(state, dict):

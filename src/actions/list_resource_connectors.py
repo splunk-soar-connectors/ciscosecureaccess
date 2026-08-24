@@ -20,6 +20,7 @@ from ..core import (
 )
 from ..outputs import ListResourceConnectorsOutput
 from ..params import ListResourceConnectorsParams
+from ..sse_api_client import GET, _encode_filters, deployments
 
 
 def list_resource_connectors(
@@ -33,12 +34,19 @@ def list_resource_connectors(
     client = asset.get_client()
     filters_obj = _parse_optional_filters(params)
     offset, limit = _clamp_offset_limit(params, MAX_LIMIT_RESOURCE_CONNECTORS)
-    data = client.ListResourceConnectors(
-        offset=offset,
-        limit=limit,
-        filters=filters_obj,
-        sort_by=getattr(params, "sort_by", "originIpAddress"),
-        sort_order=getattr(params, "sort_order", "asc"),
+    request_params = {
+        "offset": offset,
+        "limit": limit,
+        "sortBy": getattr(params, "sort_by", "originIpAddress"),
+        "sortOrder": getattr(params, "sort_order", "asc"),
+    }
+    if filters_obj is not None:
+        request_params["filters"] = _encode_filters(filters_obj)
+    data = client.request_json(
+        scope=deployments,
+        end_point="connectorAgents",
+        operation=GET,
+        params=request_params,
     )
     return ListResourceConnectorsOutput(
         data=data.get("data"),

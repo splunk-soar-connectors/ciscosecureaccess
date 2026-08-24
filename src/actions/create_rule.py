@@ -23,6 +23,7 @@ from ..core import (
 )
 from ..outputs import CreateRuleOutput
 from ..params import CreateRuleParams
+from ..sse_api_client import POST, policies
 
 
 def create_rule(params: CreateRuleParams, asset: Asset) -> CreateRuleOutput:
@@ -54,7 +55,12 @@ def create_rule(params: CreateRuleParams, asset: Asset) -> CreateRuleOutput:
         body["ruleIsEnabled"] = params.rule_is_enabled
     client = asset.get_client()
     try:
-        data = client.CreateRule(body)
+        data = client.request_json(
+            scope=policies,
+            end_point="rules",
+            operation=POST,
+            request_data=body,
+        )
     except requests.exceptions.RequestException as exc:
         message = str(exc)
         if exc.response is not None:

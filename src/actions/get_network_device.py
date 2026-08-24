@@ -15,6 +15,7 @@
 from ..core import Asset, _output_from_api_data
 from ..outputs import GetNetworkDeviceOutput
 from ..params import GetNetworkDeviceParams
+from ..sse_api_client import GET, deployments
 
 
 def get_network_device(
@@ -26,5 +27,9 @@ def get_network_device(
     https://developer.cisco.com/docs/cloud-security/get-network-device/
     """
     client = asset.get_client()
-    data = client.GetNetworkDevice(params.origin_id)
+    data = client.request_json(
+        scope=deployments,
+        end_point=f"networkdevices/{params.origin_id}",
+        operation=GET,
+    )
     return _output_from_api_data(GetNetworkDeviceOutput, data)

@@ -16,6 +16,7 @@ from soar_sdk.params import Params
 
 from ..core import Asset
 from ..outputs import ListSitesOutput
+from ..sse_api_client import GET, deployments
 
 
 def list_sites(params: Params, asset: Asset) -> ListSitesOutput:
@@ -25,7 +26,14 @@ def list_sites(params: Params, asset: Asset) -> ListSitesOutput:
     https://developer.cisco.com/docs/cloud-security/list-sites/
     """
     client = asset.get_client()
-    sites = client.ListSites()
+    result = client.request_all_pages(
+        scope=deployments,
+        end_point="sites",
+        operation=GET,
+        limit=100,
+        response_is_array=True,
+    )
+    sites = result["data"]
     if not isinstance(sites, list):
         sites = [sites] if sites is not None else []
     return ListSitesOutput(sites=sites)

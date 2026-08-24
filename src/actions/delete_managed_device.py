@@ -15,6 +15,7 @@
 from ..core import Asset
 from ..outputs import DeleteManagedDeviceOutput
 from ..params import DeleteManagedDeviceParams
+from ..sse_api_client import DELETE, deployments
 
 
 def delete_managed_device(
@@ -26,7 +27,15 @@ def delete_managed_device(
     https://developer.cisco.com/docs/cloud-security/delete-network-device/
     """
     client = asset.get_client()
-    data = client.DeleteNetworkDevice(params.origin_id)
+    response = client.request(
+        scope=deployments,
+        end_point=f"networkdevices/{params.origin_id}",
+        operation=DELETE,
+    )
+    if response.status_code in (200, 204) and not response.text.strip():
+        data = {"success": True, "message": "Network device removed"}
+    else:
+        data = response.json()
     return DeleteManagedDeviceOutput(
         success=data.get("success", True), message=data.get("message")
     )

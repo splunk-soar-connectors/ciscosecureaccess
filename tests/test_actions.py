@@ -17,28 +17,35 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 from soar_sdk.exceptions import ActionFailure
+from soar_sdk.params import Params
 
+from src.actions.create_destination_list import create_destination_list
 from src.actions.domains import get_passive_dns
+from src.actions.list_firewall_rules import list_firewall_rules
+from src.actions.list_sites import list_sites
+from src.actions.list_vpn_sessions import list_vpn_sessions
 from src.actions.make_request import make_request
 from src.actions.rules import create_rule
 from src.params import (
     CiscoSecureAccessMakeRequestParams,
+    CreateDestinationListParams,
     CreateRuleParams,
     GetPassiveDNSParams,
+    ListFirewallRulesParams,
 )
 
 
 def test_get_passive_dns_maps_pagination_output():
     client = MagicMock()
-    client.GetPassiveDNS.return_value = (
-        [{"name": "example.com", "type": "A", "rr": "192.0.2.1"}],
-        {
+    client.request_json.return_value = {
+        "records": [{"name": "example.com", "type": "A", "rr": "192.0.2.1"}],
+        "pageInfo": {
             "offset": 10,
             "limit": 1,
             "totalNumRecords": 12,
             "hasMoreRecords": True,
         },
-    )
+    }
     asset = MagicMock()
     asset.get_client.return_value = client
 
@@ -52,6 +59,132 @@ def test_get_passive_dns_maps_pagination_output():
     assert output.limit == 1
     assert output.has_more_records is True
     assert output.next_offset == 11
+    client.request_json.assert_called_once_with(
+        scope="investigate",
+        end_point="pdns/name/example.com",
+        operation="get",
+        params={"offset": 10, "limit": 1},
+    )
+
+
+def test_list_sites_uses_paginated_transport():
+    client = MagicMock()
+    client.request_all_pages.return_value = {
+        "data": [
+            {
+                "originId": 1,
+                "name": "site",
+                "siteId": 10,
+                "isDefault": False,
+                "modifiedAt": "2026-01-01T00:00:00Z",
+                "createdAt": "2026-01-01T00:00:00Z",
+            }
+        ]
+    }
+    asset = MagicMock()
+    asset.get_client.return_value = client
+
+    output = list_sites(Params(), asset)
+
+    assert output.sites[0].name == "site"
+    client.request_all_pages.assert_called_once_with(
+        scope="deployments",
+        end_point="sites",
+        operation="get",
+        limit=100,
+        response_is_array=True,
+    )
+
+
+def test_list_vpn_sessions_uses_offset_paginated_transport():
+    client = MagicMock()
+    client.request_all_offset_pages.return_value = {"data": [{"username": "user"}]}
+    asset = MagicMock()
+    asset.get_client.return_value = client
+
+    output = list_vpn_sessions(Params(), asset)
+
+    assert output.vpn_sessions[0].username == "user"
+    client.request_all_offset_pages.assert_called_once_with(
+        scope="admin",
+        end_point="vpn/userConnections",
+        operation="get",
+        limit=1000,
+    )
+
+
+def test_create_destination_list_builds_request_body():
+    client = MagicMock()
+    client.request_json.return_value = {
+        "data": {
+            "id": 123,
+            "organizationId": 456,
+            "access": "allow",
+            "isGlobal": False,
+            "name": "Block Test",
+            "thirdpartyCategoryId": None,
+            "createdAt": 1,
+            "modifiedAt": 1,
+            "isMspDefault": False,
+            "markedForDeletion": False,
+            "bundleTypeId": 2,
+        }
+    }
+    asset = MagicMock()
+    asset.get_client.return_value = client
+    params = CreateDestinationListParams(
+        name=" Block Test ",
+        access="allow",
+        destinations_json='[{"destination":"example.com","type":"domain"}]',
+    )
+
+    output = create_destination_list(params, asset)
+
+    assert output.destinationList.name == "Block Test"
+    client.request_json.assert_called_once_with(
+        scope="policies",
+        end_point="destinationlists",
+        operation="post",
+        request_data={
+            "access": "allow",
+            "isGlobal": False,
+            "name": "Block Test",
+            "bundleTypeId": 2,
+            "destinations": [{"destination": "example.com", "type": "domain"}],
+        },
+    )
+
+
+def test_list_firewall_rules_builds_filtered_request():
+    client = MagicMock()
+    client.request_json.return_value = {
+        "count": 1,
+        "results": [{"ruleId": 99, "ruleName": "Allow Test"}],
+    }
+    asset = MagicMock()
+    asset.get_client.return_value = client
+    params = ListFirewallRulesParams(
+        offset=5,
+        limit=2000,
+        rule_name="Allow",
+        filters='{"ruleAction":"allow"}',
+    )
+
+    output = list_firewall_rules(params, asset)
+
+    assert output.count == 1
+    assert output.firewall_rules[0].ruleId == 99
+    client.request_json.assert_called_once_with(
+        scope="policies",
+        end_point="rules",
+        operation="get",
+        params={
+            "offset": 5,
+            "limit": 1000,
+            "ruleName": "Allow",
+            "filters": '{"ruleAction": "allow"}',
+        },
+    )
 
 
 @pytest.mark.parametrize(
@@ -136,7 +269,7 @@ def test_create_rule_wraps_api_errors_with_readable_message():
     response.url = "https://api.sse.cisco.com/policies/v2/rules"
     response._content = b'{"message":"Rule name must not exceed 50 characters"}'
     client = MagicMock()
-    client.CreateRule.side_effect = requests.HTTPError(
+    client.request_json.side_effect = requests.HTTPError(
         "400 Client Error", response=response
     )
     asset = MagicMock()

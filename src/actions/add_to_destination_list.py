@@ -15,6 +15,7 @@
 from ..core import Asset, _find_added_destination_row, flatten_field
 from ..outputs import AddToDestinationListOutput
 from ..params import AddToDestinationListParams
+from ..sse_api_client import GET, POST, policies
 
 
 def add_to_destination_list(
@@ -32,14 +33,25 @@ def add_to_destination_list(
     )
     if not destination_list_id:
         raise ValueError("Destination list ID is required")
-    destination_list_response = client.AddToDestinationList(
-        destination_list_id, params.destination, params.comment
+    obj = {"destination": params.destination}
+    if params.comment is not None:
+        obj["comment"] = params.comment
+    destination_list_response = client.request_json(
+        scope=policies,
+        end_point=f"destinationlists/{destination_list_id}/destinations",
+        operation=POST,
+        request_data=[obj],
     )
     destination_list = destination_list_response["data"]
     if isinstance(destination_list, dict) and destination_list.get("meta") is not None:
         destination_list = flatten_field([destination_list], "meta")[0]
     added_id = None
-    raw_destinations = client.GetDestinationsFromListById(destination_list_id)
+    destinations_response = client.request_all_pages(
+        scope=policies,
+        end_point=f"destinationlists/{destination_list_id}/destinations",
+        operation=GET,
+    )
+    raw_destinations = destinations_response["data"]
     dest_rows = raw_destinations if isinstance(raw_destinations, list) else []
     added_row = _find_added_destination_row(
         dest_rows,

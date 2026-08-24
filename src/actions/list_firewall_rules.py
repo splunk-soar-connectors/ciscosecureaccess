@@ -20,6 +20,7 @@ from ..core import (
 )
 from ..outputs import ListFirewallRulesOutput
 from ..params import ListFirewallRulesParams
+from ..sse_api_client import GET, _encode_filters, policies
 
 
 def list_firewall_rules(
@@ -36,11 +37,16 @@ def list_firewall_rules(
     if rule_name is not None and str(rule_name).strip() == "":
         rule_name = None
     offset, limit = _clamp_offset_limit(params, MAX_LIMIT_FIREWALL_RULES)
-    data = client.ListFirewallRules(
-        offset=offset,
-        limit=limit,
-        rule_name=rule_name,
-        filters=filters_obj,
+    request_params = {"offset": offset, "limit": limit}
+    if rule_name is not None:
+        request_params["ruleName"] = rule_name
+    if filters_obj is not None:
+        request_params["filters"] = _encode_filters(filters_obj)
+    data = client.request_json(
+        scope=policies,
+        end_point="rules",
+        operation=GET,
+        params=request_params,
     )
     rules = (
         (data.get("results") or data.get("result") or [])

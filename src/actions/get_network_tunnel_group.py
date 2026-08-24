@@ -15,6 +15,7 @@
 from ..core import Asset, _output_from_api_data
 from ..outputs import GetNetworkTunnelGroupOutput
 from ..params import GetNetworkTunnelGroupParams
+from ..sse_api_client import GET, deployments
 
 
 def get_network_tunnel_group(
@@ -26,5 +27,9 @@ def get_network_tunnel_group(
     https://developer.cisco.com/docs/cloud-security/get-network-tunnel-group/
     """
     client = asset.get_client()
-    data = client.GetNetworkTunnelGroup(params.id)
+    data = client.request_json(
+        scope=deployments,
+        end_point=f"networktunnelgroups/{params.id}",
+        operation=GET,
+    )
     return _output_from_api_data(GetNetworkTunnelGroupOutput, data)

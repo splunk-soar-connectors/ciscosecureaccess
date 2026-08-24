@@ -15,6 +15,7 @@
 from ..core import Asset, _parse_origin_ids
 from ..outputs import ListSWGOverrideDeviceSettingsOutput
 from ..params import ListSWGOverrideDeviceSettingsParams
+from ..sse_api_client import POST, deployments
 
 
 def list_swg_override_device_settings(
@@ -28,7 +29,12 @@ def list_swg_override_device_settings(
     """
     origin_ids = _parse_origin_ids(params.origin_ids)
     client = asset.get_client()
-    data = client.ListSWGOverrideDeviceSettings(origin_ids)
+    data = client.request_json(
+        scope=deployments,
+        end_point="deviceSettings/SWGEnabled/list",
+        operation=POST,
+        request_data={"originIds": origin_ids},
+    )
     if not isinstance(data, list):
         data = []
     return ListSWGOverrideDeviceSettingsOutput(settings=data)

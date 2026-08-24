@@ -15,6 +15,7 @@
 from ..core import Asset
 from ..outputs import ListIdentitiesOutput
 from ..params import ListIdentitiesParams
+from ..sse_api_client import GET, deployments
 
 
 def list_identities(params: ListIdentitiesParams, asset: Asset) -> ListIdentitiesOutput:
@@ -23,5 +24,11 @@ def list_identities(params: ListIdentitiesParams, asset: Asset) -> ListIdentitie
     https://developer.cisco.com/docs/cloud-security/list-identities/
     """
     client = asset.get_client()
-    identities = client.ListIdentities(params.type)
+    result = client.request_all_offset_pages(
+        scope=deployments,
+        end_point=f"identities/registrations/{params.type}",
+        operation=GET,
+        limit=250,
+    )
+    identities = result["data"]
     return ListIdentitiesOutput(identities=identities)

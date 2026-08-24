@@ -16,6 +16,7 @@ from soar_sdk.params import Params
 
 from ..core import Asset
 from ..outputs import ListManagedDevicesOutput
+from ..sse_api_client import GET, deployments
 
 
 def list_managed_devices(params: Params, asset: Asset) -> ListManagedDevicesOutput:
@@ -24,5 +25,7 @@ def list_managed_devices(params: Params, asset: Asset) -> ListManagedDevicesOutp
     https://developer.cisco.com/docs/cloud-security/list-network-devices/
     """
     client = asset.get_client()
-    devices = client.ListNetworkDevices()
+    devices = client.request_json(
+        scope=deployments, end_point="networkdevices", operation=GET
+    )
     return ListManagedDevicesOutput(devices=devices)

@@ -15,6 +15,7 @@
 from ..core import Asset, MAX_IDENTITIES_UPDATE, _parse_json_param
 from ..outputs import UpdateIdentitiesOutput
 from ..params import UpdateIdentitiesParams
+from ..sse_api_client import PUT, deployments
 
 
 def update_identities(
@@ -36,5 +37,10 @@ def update_identities(
     )
     if len(identities_list) < 1 or len(identities_list) > MAX_IDENTITIES_UPDATE:
         raise ValueError("identities_json must contain 1-250 items")
-    data = client.UpdateIdentities(identity_type, identities_list)
+    data = client.request_json(
+        scope=deployments,
+        end_point=f"identities/registrations/{identity_type}",
+        operation=PUT,
+        request_data=identities_list,
+    )
     return UpdateIdentitiesOutput(success=data.get("success"))

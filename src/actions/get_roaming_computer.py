@@ -15,6 +15,7 @@
 from ..core import Asset, _output_from_api_data
 from ..outputs import GetRoamingComputerOutput
 from ..params import GetRoamingComputerParams
+from ..sse_api_client import GET, deployments
 
 
 def get_roaming_computer(
@@ -26,5 +27,9 @@ def get_roaming_computer(
     https://developer.cisco.com/docs/cloud-security/get-roaming-computer/
     """
     client = asset.get_client()
-    data = client.GetRoamingComputer(params.device_id)
+    data = client.request_json(
+        scope=deployments,
+        end_point=f"roamingcomputers/{params.device_id}",
+        operation=GET,
+    )
     return _output_from_api_data(GetRoamingComputerOutput, data)

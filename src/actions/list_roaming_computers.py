@@ -16,6 +16,7 @@ from soar_sdk.params import Params
 
 from ..core import Asset
 from ..outputs import ListRoamingComputersOutput
+from ..sse_api_client import GET, deployments
 
 
 def list_roaming_computers(params: Params, asset: Asset) -> ListRoamingComputersOutput:
@@ -25,7 +26,14 @@ def list_roaming_computers(params: Params, asset: Asset) -> ListRoamingComputers
     https://developer.cisco.com/docs/cloud-security/list-roaming-computers/
     """
     client = asset.get_client()
-    data = client.ListRoamingComputers()
+    result = client.request_all_pages(
+        scope=deployments,
+        end_point="roamingcomputers",
+        operation=GET,
+        limit=100,
+        response_is_array=True,
+    )
+    data = result["data"]
     if not isinstance(data, list):
         data = []
     return ListRoamingComputersOutput(roamingComputers=data)

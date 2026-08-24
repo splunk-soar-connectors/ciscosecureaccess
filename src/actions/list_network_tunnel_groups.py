@@ -20,6 +20,7 @@ from ..core import (
 )
 from ..outputs import ListNetworkTunnelGroupsOutput
 from ..params import ListNetworkTunnelGroupsParams
+from ..sse_api_client import GET, _encode_filters, deployments
 
 
 def list_network_tunnel_groups(
@@ -33,13 +34,22 @@ def list_network_tunnel_groups(
     client = asset.get_client()
     filters_obj = _parse_optional_filters(params)
     offset, limit = _clamp_offset_limit(params, MAX_LIMIT_NETWORK_TUNNEL_GROUPS)
-    data = client.ListNetworkTunnelGroups(
-        offset=offset,
-        limit=limit,
-        filters=filters_obj,
-        sort_by=getattr(params, "sort_by", "name"),
-        sort_order=getattr(params, "sort_order", "asc"),
-        include_statuses=getattr(params, "include_statuses", False),
+    request_params = {
+        "offset": offset,
+        "limit": limit,
+        "sortBy": getattr(params, "sort_by", "name"),
+        "sortOrder": getattr(params, "sort_order", "asc"),
+        "includeStatuses": "true"
+        if getattr(params, "include_statuses", False)
+        else "false",
+    }
+    if filters_obj is not None:
+        request_params["filters"] = _encode_filters(filters_obj)
+    data = client.request_json(
+        scope=deployments,
+        end_point="networktunnelgroups",
+        operation=GET,
+        params=request_params,
     )
     return ListNetworkTunnelGroupsOutput(
         data=data.get("data"),

@@ -15,6 +15,7 @@
 from ..core import Asset
 from ..outputs import GetDomainRiskScoreOutput
 from ..params import GetDomainParams
+from ..sse_api_client import GET, investigate
 
 
 def get_domain_risk_score(
@@ -25,5 +26,9 @@ def get_domain_risk_score(
     https://developer.cisco.com/docs/cloud-security/get-risk-score-for-domain/
     """
     client = asset.get_client()
-    domain_risk_score_response = client.GetDomainRiskScore(params.domain)
+    domain_risk_score_response = client.request_json(
+        scope=investigate,
+        end_point=f"domains/risk-score/{params.domain}",
+        operation=GET,
+    )
     return GetDomainRiskScoreOutput(**domain_risk_score_response)

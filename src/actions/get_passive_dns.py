@@ -15,6 +15,7 @@
 from ..core import Asset
 from ..outputs import GetPassiveDNSOutput
 from ..params import GetPassiveDNSParams
+from ..sse_api_client import GET, PDNS_DEFAULT_LIMIT, PDNS_MAX_LIMIT, investigate
 
 
 def get_passive_dns(params: GetPassiveDNSParams, asset: Asset) -> GetPassiveDNSOutput:
@@ -23,9 +24,21 @@ def get_passive_dns(params: GetPassiveDNSParams, asset: Asset) -> GetPassiveDNSO
     https://developer.cisco.com/docs/cloud-security/get-resource-records-for-name/
     """
     client = asset.get_client()
-    records, page_info = client.GetPassiveDNS(
-        params.domain, offset=params.offset, limit=params.limit
+    limit = params.limit
+    if not isinstance(limit, int) or limit < 1:
+        limit = PDNS_DEFAULT_LIMIT
+    limit = min(limit, PDNS_MAX_LIMIT)
+    offset = params.offset
+    if not isinstance(offset, int) or offset < 0:
+        offset = 0
+    parsed = client.request_json(
+        scope=investigate,
+        end_point=f"pdns/name/{params.domain}",
+        operation=GET,
+        params={"offset": offset, "limit": limit},
     )
+    records = parsed.get("records") or parsed.get("data") or []
+    page_info = parsed.get("pageInfo") or parsed.get("meta") or {}
     offset = page_info.get("offset", params.offset)
     total = page_info.get("totalNumRecords")
     has_more = page_info.get("hasMoreRecords")

@@ -15,6 +15,7 @@
 from ..core import Asset
 from ..outputs import ListCertificatesForUserOutput
 from ..params import ListCertificatesForUserParams
+from ..sse_api_client import GET, admin
 
 
 def list_certificates_for_user(
@@ -26,7 +27,11 @@ def list_certificates_for_user(
     https://developer.cisco.com/docs/cloud-security/list-certificates-for-user/
     """
     client = asset.get_client()
-    data = client.ListCertificatesForUser(params.user_id)
+    data = client.request_json(
+        scope=admin,
+        end_point=f"ztna/users/{params.user_id}/deviceCertificates",
+        operation=GET,
+    )
     return ListCertificatesForUserOutput(
         userId=data.get("userId"),
         devices=data.get("devices"),

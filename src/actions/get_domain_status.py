@@ -15,6 +15,7 @@
 from ..core import Asset, DOMAIN_STATUS_DESCRIPTIONS
 from ..outputs import GetDomainStatusOutput
 from ..params import GetDomainParams
+from ..sse_api_client import GET, investigate
 
 
 def get_domain_status(params: GetDomainParams, asset: Asset) -> GetDomainStatusOutput:
@@ -24,7 +25,11 @@ def get_domain_status(params: GetDomainParams, asset: Asset) -> GetDomainStatusO
     """
     client = asset.get_client()
     domain = params.domain
-    domain_status_response = client.GetDomainStatus(domain)
+    domain_status_response = client.request_json(
+        scope=investigate,
+        end_point=f"domains/categorization/{domain}?showLabels",
+        operation=GET,
+    )
     domain_status_object = domain_status_response[domain]
     domain_status_object["domain"] = domain
     domain_status_object["status_description"] = DOMAIN_STATUS_DESCRIPTIONS.get(

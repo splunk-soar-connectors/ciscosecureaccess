@@ -15,6 +15,7 @@
 from ..core import Asset, _output_from_api_data, _parse_origin_ids
 from ..outputs import SetSWGOverrideDeviceSettingsOutput
 from ..params import SetSWGOverrideDeviceSettingsParams
+from ..sse_api_client import POST, deployments
 
 
 def set_swg_override_device_settings(
@@ -28,5 +29,10 @@ def set_swg_override_device_settings(
     """
     origin_ids = _parse_origin_ids(params.origin_ids)
     client = asset.get_client()
-    data = client.SetSWGOverrideDeviceSettings(params.value, origin_ids)
+    data = client.request_json(
+        scope=deployments,
+        end_point="deviceSettings/SWGEnabled/set",
+        operation=POST,
+        request_data={"value": params.value, "originIds": origin_ids},
+    )
     return _output_from_api_data(SetSWGOverrideDeviceSettingsOutput, data)
