@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import Asset, _output_from_api_data, _parse_origin_ids
+from ..asset import Asset
+from ..input_helpers import _parse_origin_ids
 from ..outputs import DeleteSWGOverrideDeviceSettingsOutput
 from ..params import DeleteSWGOverrideDeviceSettingsParams
+from ..output_helpers import _output_from_api_data
 from ..sse_api_client import POST, deployments
 
 

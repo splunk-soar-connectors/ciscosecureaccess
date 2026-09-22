@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import Asset, _destinations_for_create_destination_list, flatten_field
+from ..asset import Asset
+from ..destination_helpers import (
+    _destinations_for_create_destination_list,
+    flatten_field,
+)
 from ..outputs import CreateDestinationListOutput
 from ..params import CreateDestinationListParams
 from ..sse_api_client import POST, policies

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import Asset
+from ..asset import Asset
 from ..outputs import ListIdentitiesOutput
 from ..params import ListIdentitiesParams
 from ..sse_api_client import GET, deployments
@@ -24,7 +24,7 @@ def list_identities(params: ListIdentitiesParams, asset: Asset) -> ListIdentitie
     https://developer.cisco.com/docs/cloud-security/list-identities/
     """
     client = asset.get_client()
-    result = client.request_all_offset_pages(
+    result = client.QueryAllPagesOffset(
         scope=deployments,
         end_point=f"identities/registrations/{params.type}",
         operation=GET,

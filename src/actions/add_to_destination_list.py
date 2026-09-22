@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import Asset, _find_added_destination_row, flatten_field
+from ..asset import Asset
+from ..destination_helpers import _find_added_destination_row, flatten_field
 from ..outputs import AddToDestinationListOutput
 from ..params import AddToDestinationListParams
 from ..sse_api_client import GET, POST, policies
@@ -46,7 +47,7 @@ def add_to_destination_list(
     if isinstance(destination_list, dict) and destination_list.get("meta") is not None:
         destination_list = flatten_field([destination_list], "meta")[0]
     added_id = None
-    destinations_response = client.request_all_pages(
+    destinations_response = client.QueryAllPages(
         scope=policies,
         end_point=f"destinationlists/{destination_list_id}/destinations",
         operation=GET,

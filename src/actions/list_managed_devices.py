@@ -14,9 +14,10 @@
 
 from soar_sdk.params import Params
 
-from ..core import Asset
+from ..asset import Asset
 from ..outputs import ListManagedDevicesOutput
 from ..sse_api_client import GET, deployments
+from ..response_handling import require_list
 
 
 def list_managed_devices(params: Params, asset: Asset) -> ListManagedDevicesOutput:
@@ -28,4 +29,6 @@ def list_managed_devices(params: Params, asset: Asset) -> ListManagedDevicesOutp
     devices = client.request_json(
         scope=deployments, end_point="networkdevices", operation=GET
     )
-    return ListManagedDevicesOutput(devices=devices)
+    return ListManagedDevicesOutput(
+        devices=require_list(devices, "list managed devices response")
+    )

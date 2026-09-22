@@ -17,7 +17,8 @@ import json
 from soar_sdk.action_results import MakeRequestOutput
 from soar_sdk.exceptions import ActionFailure
 
-from ..core import Asset
+from ..asset import Asset
+from ..error_handling import format_action_error
 from ..params import CiscoSecureAccessMakeRequestParams
 
 
@@ -28,9 +29,7 @@ def _parse_make_request_json_object(value: str | None, param_name: str) -> dict 
     try:
         parsed = json.loads(value)
     except (json.JSONDecodeError, TypeError) as exc:
-        raise ActionFailure(
-            f"Invalid JSON in the {param_name} parameter: {value}"
-        ) from exc
+        raise ActionFailure(f"Invalid JSON in the {param_name} parameter.") from exc
     if not isinstance(parsed, dict):
         raise ActionFailure(f"The {param_name} parameter must be a JSON object.")
     return parsed
@@ -58,7 +57,7 @@ def _parse_make_request_body(value: str | None):
     try:
         return json.loads(value)
     except (json.JSONDecodeError, TypeError) as exc:
-        raise ActionFailure(f"Invalid JSON in the body parameter: {value}") from exc
+        raise ActionFailure("Invalid JSON in the body parameter.") from exc
 
 
 def make_request(
@@ -93,7 +92,7 @@ def make_request(
             verify_ssl=params.verify_ssl,
         )
     except Exception as exc:
-        raise ActionFailure(f"Request failed: {exc}") from exc
+        raise ActionFailure(format_action_error("Request failed", exc)) from exc
 
     return MakeRequestOutput(
         status_code=response.status_code,

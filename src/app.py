@@ -15,15 +15,16 @@
 from soar_sdk.app import App
 
 from .actions import register_actions
-from .core import Asset, test_connectivity
+from .asset import Asset, test_connectivity
 
 
 def create_cisco_secure_access_soar_connector_app() -> App:
+    """Create and configure the Cisco Secure Access SOAR connector app."""
     app = App(
         name="Cisco Secure Access",
         app_type="information",
-        logo="logo.svg",
-        logo_dark="logo_dark.svg",
+        logo="logo_cisco.svg",
+        logo_dark="logo_cisco_dark.svg",
         product_vendor="Cisco",
         product_name="Cisco Secure Access",
         publisher="Splunk",

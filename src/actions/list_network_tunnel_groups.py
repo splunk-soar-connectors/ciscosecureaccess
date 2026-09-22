@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import (
-    Asset,
-    MAX_LIMIT_NETWORK_TUNNEL_GROUPS,
-    _clamp_offset_limit,
-    _parse_optional_filters,
-)
+from ..asset import Asset
+from ..constants import MAX_LIMIT_NETWORK_TUNNEL_GROUPS
+from ..input_helpers import _clamp_offset_limit, _parse_optional_filters
 from ..outputs import ListNetworkTunnelGroupsOutput
 from ..params import ListNetworkTunnelGroupsParams
+from ..response_handling import require_mapping
 from ..sse_api_client import GET, _encode_filters, deployments
 
 
@@ -51,6 +49,7 @@ def list_network_tunnel_groups(
         operation=GET,
         params=request_params,
     )
+    data = require_mapping(data, "list network tunnel groups response")
     return ListNetworkTunnelGroupsOutput(
         data=data.get("data"),
         offset=data.get("offset"),

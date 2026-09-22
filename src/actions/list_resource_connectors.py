@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import (
-    Asset,
-    MAX_LIMIT_RESOURCE_CONNECTORS,
-    _clamp_offset_limit,
-    _parse_optional_filters,
-)
+from ..asset import Asset
+from ..constants import MAX_LIMIT_RESOURCE_CONNECTORS
+from ..input_helpers import _clamp_offset_limit, _parse_optional_filters
 from ..outputs import ListResourceConnectorsOutput
 from ..params import ListResourceConnectorsParams
+from ..response_handling import require_mapping
 from ..sse_api_client import GET, _encode_filters, deployments
 
 
@@ -48,6 +46,7 @@ def list_resource_connectors(
         operation=GET,
         params=request_params,
     )
+    data = require_mapping(data, "list resource connectors response")
     return ListResourceConnectorsOutput(
         data=data.get("data"),
         offset=data.get("offset"),

@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import Asset
+from ..asset import Asset
 from ..outputs import ListCertificatesForDeviceOutput
 from ..params import ListCertificatesForDeviceParams
+from ..response_handling import require_mapping
 from ..sse_api_client import GET, admin
 
 
@@ -32,6 +33,7 @@ def list_certificates_for_device(
         end_point=f"ztna/users/{params.user_id}/devices/{params.device_id}/certificates",
         operation=GET,
     )
+    data = require_mapping(data, "list certificates for device response")
     return ListCertificatesForDeviceOutput(
         deviceId=data.get("deviceId"),
         certificates=data.get("certificates"),

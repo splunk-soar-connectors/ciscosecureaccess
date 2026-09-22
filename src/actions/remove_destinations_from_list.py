@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import Asset, _parse_comma_list
+from ..asset import Asset
+from ..input_helpers import _parse_comma_list
 from ..outputs import RemoveDestinationsFromListOutput
 from ..params import RemoveDestinationsFromListParams
 from ..sse_api_client import DELETE, policies

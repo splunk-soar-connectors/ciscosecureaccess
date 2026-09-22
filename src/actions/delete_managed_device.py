@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import Asset
+from ..asset import Asset
 from ..outputs import DeleteManagedDeviceOutput
 from ..params import DeleteManagedDeviceParams
+from ..response_handling import require_mapping
 from ..sse_api_client import DELETE, deployments
 
 
@@ -27,7 +28,7 @@ def delete_managed_device(
     https://developer.cisco.com/docs/cloud-security/delete-network-device/
     """
     client = asset.get_client()
-    response = client.request(
+    response = client.Query(
         scope=deployments,
         end_point=f"networkdevices/{params.origin_id}",
         operation=DELETE,
@@ -35,7 +36,7 @@ def delete_managed_device(
     if response.status_code in (200, 204) and not response.text.strip():
         data = {"success": True, "message": "Network device removed"}
     else:
-        data = response.json()
+        data = require_mapping(response.json(), "delete network device response")
     return DeleteManagedDeviceOutput(
         success=data.get("success", True), message=data.get("message")
     )

@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import Asset
+from ..asset import Asset
 from ..outputs import GetDomainRiskScoreOutput
 from ..params import GetDomainParams
+from ..response_handling import require_mapping
 from ..sse_api_client import GET, investigate
 
 
@@ -31,4 +32,6 @@ def get_domain_risk_score(
         end_point=f"domains/risk-score/{params.domain}",
         operation=GET,
     )
-    return GetDomainRiskScoreOutput(**domain_risk_score_response)
+    return GetDomainRiskScoreOutput(
+        **require_mapping(domain_risk_score_response, "domain risk score response")
+    )

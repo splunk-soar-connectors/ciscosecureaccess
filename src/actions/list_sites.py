@@ -14,7 +14,7 @@
 
 from soar_sdk.params import Params
 
-from ..core import Asset
+from ..asset import Asset
 from ..outputs import ListSitesOutput
 from ..sse_api_client import GET, deployments
 
@@ -26,7 +26,7 @@ def list_sites(params: Params, asset: Asset) -> ListSitesOutput:
     https://developer.cisco.com/docs/cloud-security/list-sites/
     """
     client = asset.get_client()
-    result = client.request_all_pages(
+    result = client.QueryAllPages(
         scope=deployments,
         end_point="sites",
         operation=GET,

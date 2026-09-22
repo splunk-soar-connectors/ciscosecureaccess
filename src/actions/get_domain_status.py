@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import Asset, DOMAIN_STATUS_DESCRIPTIONS
+from ..asset import Asset
+from ..constants import DOMAIN_STATUS_DESCRIPTIONS
 from ..outputs import GetDomainStatusOutput
 from ..params import GetDomainParams
 from ..sse_api_client import GET, investigate

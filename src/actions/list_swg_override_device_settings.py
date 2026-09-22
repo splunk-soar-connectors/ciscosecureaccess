@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import Asset, _parse_origin_ids
+from ..asset import Asset
+from ..input_helpers import _parse_origin_ids
 from ..outputs import ListSWGOverrideDeviceSettingsOutput
 from ..params import ListSWGOverrideDeviceSettingsParams
+from ..response_handling import require_list
 from ..sse_api_client import POST, deployments
 
 
@@ -35,6 +37,6 @@ def list_swg_override_device_settings(
         operation=POST,
         request_data={"originIds": origin_ids},
     )
-    if not isinstance(data, list):
-        data = []
-    return ListSWGOverrideDeviceSettingsOutput(settings=data)
+    return ListSWGOverrideDeviceSettingsOutput(
+        settings=require_list(data, "list SWG override device settings response")
+    )

@@ -45,6 +45,7 @@ from .update_identities import update_identities
 
 
 def register_actions(app: App) -> App:
+    """Register Cisco Secure Access actions with the SOAR application."""
     app.register_action(
         list_destination_lists,
         description="List Cisco Secure Access destination lists.",

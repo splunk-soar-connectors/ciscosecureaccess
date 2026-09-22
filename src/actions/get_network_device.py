@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import Asset, _output_from_api_data
+from ..asset import Asset
+from ..output_helpers import _output_from_api_data
 from ..outputs import GetNetworkDeviceOutput
 from ..params import GetNetworkDeviceParams
 from ..sse_api_client import GET, deployments

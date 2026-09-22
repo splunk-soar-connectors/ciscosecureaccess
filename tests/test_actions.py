@@ -36,6 +36,7 @@ from src.params import (
 
 
 def test_get_passive_dns_maps_pagination_output():
+    """Map passive-DNS pagination metadata into the action output."""
     client = MagicMock()
     client.request_json.return_value = {
         "records": [{"name": "example.com", "type": "A", "rr": "192.0.2.1"}],
@@ -68,8 +69,9 @@ def test_get_passive_dns_maps_pagination_output():
 
 
 def test_list_sites_uses_paginated_transport():
+    """Use page-numbered transport when listing sites."""
     client = MagicMock()
-    client.request_all_pages.return_value = {
+    client.QueryAllPages.return_value = {
         "data": [
             {
                 "originId": 1,
@@ -87,7 +89,7 @@ def test_list_sites_uses_paginated_transport():
     output = list_sites(Params(), asset)
 
     assert output.sites[0].name == "site"
-    client.request_all_pages.assert_called_once_with(
+    client.QueryAllPages.assert_called_once_with(
         scope="deployments",
         end_point="sites",
         operation="get",
@@ -97,15 +99,16 @@ def test_list_sites_uses_paginated_transport():
 
 
 def test_list_vpn_sessions_uses_offset_paginated_transport():
+    """Use offset pagination when listing VPN sessions."""
     client = MagicMock()
-    client.request_all_offset_pages.return_value = {"data": [{"username": "user"}]}
+    client.QueryAllPagesOffset.return_value = {"data": [{"username": "user"}]}
     asset = MagicMock()
     asset.get_client.return_value = client
 
     output = list_vpn_sessions(Params(), asset)
 
     assert output.vpn_sessions[0].username == "user"
-    client.request_all_offset_pages.assert_called_once_with(
+    client.QueryAllPagesOffset.assert_called_once_with(
         scope="admin",
         end_point="vpn/userConnections",
         operation="get",
@@ -114,6 +117,7 @@ def test_list_vpn_sessions_uses_offset_paginated_transport():
 
 
 def test_create_destination_list_builds_request_body():
+    """Build the expected destination-list creation request body."""
     client = MagicMock()
     client.request_json.return_value = {
         "data": {
@@ -156,6 +160,7 @@ def test_create_destination_list_builds_request_body():
 
 
 def test_list_firewall_rules_builds_filtered_request():
+    """Serialize firewall-rule filters and clamp the request limit."""
     client = MagicMock()
     client.request_json.return_value = {
         "count": 1,
@@ -208,6 +213,7 @@ def test_list_firewall_rules_builds_filtered_request():
 def test_make_request_passes_supported_methods_to_client(
     http_method, endpoint, body, parsed_body
 ):
+    """Forward supported arbitrary-request parameters to the API client."""
     response = MagicMock(status_code=200, text='{"ok": true}')
     client = MagicMock()
     client.MakeRequest.return_value = response
@@ -241,6 +247,7 @@ def test_make_request_passes_supported_methods_to_client(
 
 @pytest.mark.parametrize("endpoint", ["", "/", "https://example.com/path"])
 def test_make_request_rejects_invalid_endpoint(endpoint):
+    """Reject empty, root, and absolute endpoints before making a request."""
     asset = MagicMock()
     params = CiscoSecureAccessMakeRequestParams(http_method="GET", endpoint=endpoint)
 
@@ -251,6 +258,7 @@ def test_make_request_rejects_invalid_endpoint(endpoint):
 
 
 def test_make_request_wraps_client_errors():
+    """Convert client exceptions into an action failure."""
     client = MagicMock()
     client.MakeRequest.side_effect = RuntimeError("request failed")
     asset = MagicMock()
@@ -264,6 +272,7 @@ def test_make_request_wraps_client_errors():
 
 
 def test_create_rule_wraps_api_errors_with_readable_message():
+    """Expose a structured API error message when rule creation fails."""
     response = requests.Response()
     response.status_code = 400
     response.url = "https://api.sse.cisco.com/policies/v2/rules"

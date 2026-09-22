@@ -15,12 +15,10 @@
 import requests
 from soar_sdk.exceptions import ActionFailure
 
-from ..core import (
-    Asset,
-    _output_from_api_data,
-    _parse_json_param,
-    _stringify_item_values,
-)
+from ..asset import Asset
+from ..input_helpers import _parse_json_param
+from ..output_helpers import _output_from_api_data, _stringify_item_values
+from ..error_handling import format_action_error
 from ..outputs import CreateRuleOutput
 from ..params import CreateRuleParams
 from ..sse_api_client import POST, policies
@@ -62,19 +60,7 @@ def create_rule(params: CreateRuleParams, asset: Asset) -> CreateRuleOutput:
             request_data=body,
         )
     except requests.exceptions.RequestException as exc:
-        message = str(exc)
-        if exc.response is not None:
-            try:
-                response_data = exc.response.json()
-            except requests.exceptions.JSONDecodeError:
-                response_data = None
-            if isinstance(response_data, dict):
-                message = str(
-                    response_data.get("message")
-                    or response_data.get("error")
-                    or message
-                )
-        raise ActionFailure(f"Failed to create rule: {message}") from exc
+        raise ActionFailure(format_action_error("Failed to create rule", exc)) from exc
     if isinstance(data, dict):
         if "ruleConditions" in data:
             data["ruleConditions"] = _stringify_item_values(

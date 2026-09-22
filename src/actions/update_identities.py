@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import Asset, MAX_IDENTITIES_UPDATE, _parse_json_param
+from ..asset import Asset
+from ..constants import MAX_IDENTITIES_UPDATE
+from ..input_helpers import _parse_json_param
 from ..outputs import UpdateIdentitiesOutput
 from ..params import UpdateIdentitiesParams
+from ..response_handling import require_mapping
 from ..sse_api_client import PUT, deployments
 
 
@@ -43,4 +46,6 @@ def update_identities(
         operation=PUT,
         request_data=identities_list,
     )
-    return UpdateIdentitiesOutput(success=data.get("success"))
+    return UpdateIdentitiesOutput(
+        success=require_mapping(data, "update identities response").get("success")
+    )

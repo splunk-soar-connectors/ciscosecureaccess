@@ -36,6 +36,8 @@ from requests import HTTPError
 from requests.auth import HTTPBasicAuth
 from requests_oauthlib import OAuth2Session
 
+from .response_handling import require_list, require_mapping
+
 
 # key scopes
 policies = "policies"
@@ -76,6 +78,7 @@ class SSE_API:
     def __init__(
         self, base_url, client_id, client_secret, auth_header_name="Authorization"
     ):
+        """Initialize the API client with its base URL and OAuth credentials."""
         self.base_url = base_url
         self.client_id = client_id
         self.client_secret = client_secret
@@ -83,6 +86,7 @@ class SSE_API:
         self.token = None
 
     def _headers(self, *, content_type: str | None = "application/json") -> dict:
+        """Build authenticated request headers with an optional content type."""
         headers = {
             self.auth_header_name: BEARER_PREFIX + self.token,
             "Accept": "application/json",
@@ -92,19 +96,23 @@ class SSE_API:
         return headers
 
     def GetToken(self):
+        """Fetch and store an OAuth access token for subsequent API requests."""
         auth = HTTPBasicAuth(self.client_id, self.client_secret)
         client = BackendApplicationClient(client_id=self.client_id)
         oauth = OAuth2Session(client=client)
         sse_auth_url = f"{self.base_url}{SSE_AUTH_ENDPOINT}"
-        token_response = oauth.fetch_token(
-            token_url=sse_auth_url,
-            auth=auth,
-            timeout=HTTP_REQUEST_TIMEOUT_SEC,
+        token_response = require_mapping(
+            oauth.fetch_token(
+                token_url=sse_auth_url,
+                auth=auth,
+                timeout=HTTP_REQUEST_TIMEOUT_SEC,
+            ),
+            "token response",
         )
         self.token = token_response.get("access_token")
         return self.token
 
-    def request(
+    def Query(
         self,
         scope,
         end_point,
@@ -114,6 +122,7 @@ class SSE_API:
         encoder=None,
         params=None,
     ) -> requests.Response:
+        """Execute an authenticated API request and retry once after token expiry."""
         base_uri = f"{self.base_url.rstrip('/')}/{scope}/v2"
         request_url = f"{base_uri}/{str(end_point).lstrip('/')}"
         operation = operation.lower()
@@ -159,9 +168,10 @@ class SSE_API:
         raise RuntimeError("Unable to complete API request after token refresh")
 
     def request_json(self, *args, **kwargs):
-        return self.request(*args, **kwargs).json()
+        """Execute a query and return its decoded JSON response body."""
+        return self.Query(*args, **kwargs).json()
 
-    def request_all_pages(
+    def QueryAllPages(
         self,
         scope,
         end_point,
@@ -187,17 +197,15 @@ class SSE_API:
                 operation=operation,
                 params={"page": page, "limit": limit},
             )
+            context = f"{scope}/v2/{end_point} page {page}"
             if response_is_array:
-                chunk = (
-                    parsed
-                    if isinstance(parsed, list)
-                    else ([parsed] if parsed is not None else [])
-                )
+                chunk = require_list(parsed, context)
                 all_data.extend(chunk)
                 if len(chunk) < limit:
                     break
                 page += 1
                 continue
+            parsed = require_mapping(parsed, context)
             last_status = parsed.get("status")
             raw_meta = parsed.get("meta") or parsed.get("pageInfo") or {}
             last_meta = raw_meta if isinstance(raw_meta, dict) else {}
@@ -228,7 +236,7 @@ class SSE_API:
             "data": all_data,
         }
 
-    def request_all_offset_pages(
+    def QueryAllPagesOffset(
         self,
         scope,
         end_point,
@@ -251,7 +259,9 @@ class SSE_API:
                 operation=operation,
                 params={"offset": offset, "limit": limit},
             )
-            last_response = parsed if isinstance(parsed, dict) else {}
+            last_response = require_mapping(
+                parsed, f"{scope}/v2/{end_point} offset {offset}"
+            )
             chunk = last_response.get(data_key) or []
             if not isinstance(chunk, list):
                 chunk = [chunk] if chunk is not None else []
@@ -273,69 +283,8 @@ class SSE_API:
             "total": total if total is not None else len(all_data),
         }
 
-    def Query(
-        self,
-        scope,
-        end_point,
-        operation,
-        request_data=None,
-        files=None,
-        encoder=None,
-        params=None,
-    ):
-        return self.request(
-            scope=scope,
-            end_point=end_point,
-            operation=operation,
-            request_data=request_data,
-            files=files,
-            encoder=encoder,
-            params=params,
-        )
-
-    def QueryAllPages(
-        self,
-        scope,
-        end_point,
-        operation=GET,
-        limit=100,
-        response_is_array=False,
-    ):
-        """
-        Fetch all pages of a 1-based page-numbered endpoint and return the combined result.
-
-        response_is_array: True when the body is a raw list rather than a
-        {data/records, meta} object.
-        """
-        return self.request_all_pages(
-            scope=scope,
-            end_point=end_point,
-            operation=operation,
-            limit=limit,
-            response_is_array=response_is_array,
-        )
-
-    def QueryAllPagesOffset(
-        self,
-        scope,
-        end_point,
-        operation=GET,
-        limit=100,
-        data_key="data",
-    ):
-        """
-        GET all pages of an offset/limit paged endpoint and return the combined result.
-        Response shape: { data_key: [...], total: N, offset: ..., limit: ..., ... }.
-        """
-        return self.request_all_offset_pages(
-            scope=scope,
-            end_point=end_point,
-            operation=operation,
-            limit=limit,
-            data_key=data_key,
-        )
-
     def ParseJsonResponse(self, res: requests.Response):
+        """Decode and return a requests response JSON body."""
         json_response = res.json()
         return json_response
 
@@ -380,8 +329,11 @@ class SSE_API:
         )
 
     def ListNetworkDevices(self):
+        """List managed network devices in the organization."""
         res = self.Query(scope="deployments", end_point="networkdevices", operation=GET)
-        return self.ParseJsonResponse(res)
+        return require_list(
+            self.ParseJsonResponse(res), "list network devices response"
+        )
 
     def DeleteNetworkDevice(self, origin_id: int):
         """DELETE deployments/v2/networkdevices/{originId}. Remove a network device."""
@@ -422,6 +374,7 @@ class SSE_API:
         return res["data"]
 
     def ListVirtualAppliances(self):
+        """List virtual appliances in the organization."""
         res = self.QueryAllPages(
             scope="deployments",
             end_point="virtualappliances",
@@ -432,6 +385,7 @@ class SSE_API:
         return res["data"]
 
     def ListVPNSessions(self):
+        """List user VPN sessions in the organization."""
         res = self.QueryAllPagesOffset(
             scope=admin,
             end_point="vpn/userConnections",
@@ -441,6 +395,7 @@ class SSE_API:
         return res["data"]
 
     def ListRoamingComputers(self):
+        """List roaming computers in the organization."""
         res = self.QueryAllPages(
             scope="deployments",
             end_point="roamingcomputers",
@@ -496,6 +451,7 @@ class SSE_API:
         return self.ParseJsonResponse(res)
 
     def ListDestinationLists(self):
+        """List destination lists in the organization."""
         result = self.QueryAllPages(
             scope=policies, end_point="destinationlists", operation=GET
         )
@@ -524,6 +480,7 @@ class SSE_API:
         return self.ParseJsonResponse(res)
 
     def GetDestinationsFromListById(self, destination_list_id):
+        """List destinations belonging to a destination list."""
         end_point_destination_list_id = (
             f"destinationlists/{destination_list_id}/destinations"
         )
@@ -556,6 +513,7 @@ class SSE_API:
         return self.ParseJsonResponse(res)
 
     def RemoveDestinationsFromList(self, destination_list_id, destination_ids):
+        """Remove destination entries from a destination list."""
         end_point_destination_list_id = (
             f"destinationlists/{destination_list_id}/destinations/remove"
         )
@@ -569,11 +527,13 @@ class SSE_API:
         return self.ParseJsonResponse(res)["data"]
 
     def GetDomainStatus(self, domain):
+        """Get the categorization status for a domain."""
         end_point_domain = f"domains/categorization/{domain}?showLabels"
         res = self.Query(scope=investigate, end_point=end_point_domain, operation=GET)
         return self.ParseJsonResponse(res)
 
     def GetDomainRiskScore(self, domain):
+        """Get the risk score for a domain."""
         end_point_domain = f"domains/risk-score/{domain}"
         res = self.Query(scope=investigate, end_point=end_point_domain, operation=GET)
         return self.ParseJsonResponse(res)
@@ -597,17 +557,29 @@ class SSE_API:
         limit = min(limit, PDNS_MAX_LIMIT)
         if not isinstance(offset, int) or offset < 0:
             offset = 0
-        parsed = self.request_json(
-            scope=investigate,
-            end_point=end_point_domain,
-            operation=GET,
-            params={"offset": offset, "limit": limit},
+        parsed = require_mapping(
+            self.request_json(
+                scope=investigate,
+                end_point=end_point_domain,
+                operation=GET,
+                params={"offset": offset, "limit": limit},
+            ),
+            "passive DNS response",
         )
-        records = parsed.get("records") or parsed.get("data") or []
-        page_info = parsed.get("pageInfo") or parsed.get("meta") or {}
+        raw_records = parsed.get("records")
+        if raw_records is None:
+            raw_records = parsed.get("data")
+        records = require_list(raw_records, "passive DNS records")
+        raw_page_info = parsed.get("pageInfo")
+        if raw_page_info is None:
+            raw_page_info = parsed.get("meta")
+        if raw_page_info is None:
+            raw_page_info = {}
+        page_info = require_mapping(raw_page_info, "passive DNS page information")
         return records, page_info
 
     def ListIdentities(self, registration_type):
+        """List registered identities for the specified identity type."""
         end_point_identities = f"identities/registrations/{registration_type}"
         res = self.QueryAllPagesOffset(
             scope=deployments,

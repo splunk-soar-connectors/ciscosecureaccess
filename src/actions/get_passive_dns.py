@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import Asset
+from ..asset import Asset
 from ..outputs import GetPassiveDNSOutput
 from ..params import GetPassiveDNSParams
 from ..sse_api_client import GET, PDNS_DEFAULT_LIMIT, PDNS_MAX_LIMIT, investigate

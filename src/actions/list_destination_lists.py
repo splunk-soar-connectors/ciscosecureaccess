@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import Asset, flatten_field
+from ..asset import Asset
+from ..destination_helpers import flatten_field
 from ..outputs import ListDestinationListsOutput
 from ..params import ListDestinationListsParams
 from ..sse_api_client import GET, policies
@@ -26,7 +27,7 @@ def list_destination_lists(
     https://developer.cisco.com/docs/cloud-security/get-destination-lists/
     """
     client = asset.get_client()
-    destination_list_response = client.request_all_pages(
+    destination_list_response = client.QueryAllPages(
         scope=policies, end_point="destinationlists", operation=GET
     )
     destination_lists = destination_list_response["data"]
@@ -34,7 +35,7 @@ def list_destination_lists(
     if params.list_destinations:
         destination_lists_output = []
         for destination_list in destination_lists:
-            destinations_response = client.request_all_pages(
+            destinations_response = client.QueryAllPages(
                 scope=policies,
                 end_point=f"destinationlists/{destination_list['id']}/destinations",
                 operation=GET,

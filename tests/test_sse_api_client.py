@@ -17,10 +17,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
+from src.response_handling import UnexpectedAPIResponse
 from src.sse_api_client import SSE_API
 
 
 def _json_response(payload):
+    """Create a successful mocked HTTP response containing JSON payload."""
     response = MagicMock()
     response.json.return_value = payload
     response.raise_for_status.return_value = None
@@ -29,18 +31,20 @@ def _json_response(payload):
 
 @pytest.fixture
 def client():
+    """Return an authenticated SSE API client for unit tests."""
     api = SSE_API("https://api.sse.cisco.com", "client-id", "client-secret")
     api.token = "test-token"
     return api
 
 
-def test_request_normalizes_method_url_and_forwards_request_options():
+def test_query_normalizes_method_url_and_forwards_request_options():
+    """Normalize request inputs and forward them to requests."""
     api = SSE_API("https://api.sse.cisco.com/", "client-id", "client-secret")
     api.token = "test-token"
     response = _json_response({"ok": True})
 
     with patch("src.sse_api_client.requests.request", return_value=response) as request:
-        result = api.request(
+        result = api.Query(
             scope="deployments",
             end_point="/networkdevices",
             operation="post",
@@ -65,7 +69,8 @@ def test_request_normalizes_method_url_and_forwards_request_options():
 
 
 def test_request_json_returns_parsed_json(client):
-    with patch.object(client, "request", return_value=_json_response({"ok": True})):
+    """Return decoded JSON from the canonical query method."""
+    with patch.object(client, "Query", return_value=_json_response({"ok": True})):
         assert client.request_json(
             scope="deployments", end_point="networkdevices", operation="GET"
         ) == {"ok": True}
@@ -79,6 +84,7 @@ def test_request_json_returns_parsed_json(client):
     ],
 )
 def test_array_list_actions_fetch_all_numbered_pages(client, method_name, item_key):
+    """Fetch and combine all numbered pages for array-based list actions."""
     page_one = [{item_key: index} for index in range(100)]
     page_two = [{item_key: index} for index in range(100, 125)]
 
@@ -98,7 +104,8 @@ def test_array_list_actions_fetch_all_numbered_pages(client, method_name, item_k
     assert result[-1][item_key] == 124
 
 
-def test_request_all_pages_stops_when_total_reached(client):
+def test_query_all_pages_stops_when_total_reached(client):
+    """Stop page-numbered requests after the reported total is reached."""
     with patch.object(
         client,
         "request_json",
@@ -107,7 +114,7 @@ def test_request_all_pages_stops_when_total_reached(client):
             {"status": "ok", "meta": {"limit": 1, "total": 2}, "data": [{"id": 2}]},
         ],
     ) as request_json:
-        result = client.request_all_pages(
+        result = client.QueryAllPages(
             scope="policies", end_point="destinationlists", limit=1
         )
 
@@ -119,7 +126,8 @@ def test_request_all_pages_stops_when_total_reached(client):
     assert result["meta"]["total"] == 2
 
 
-def test_request_all_pages_stops_when_has_more_records_false(client):
+def test_query_all_pages_stops_when_has_more_records_false(client):
+    """Stop page-numbered requests when the API reports no more records."""
     with patch.object(
         client,
         "request_json",
@@ -133,7 +141,7 @@ def test_request_all_pages_stops_when_has_more_records_false(client):
             "records": [{"id": 1}],
         },
     ) as request_json:
-        result = client.request_all_pages(
+        result = client.QueryAllPages(
             scope="investigate", end_point="pdns/name/example.com", limit=1
         )
 
@@ -142,9 +150,10 @@ def test_request_all_pages_stops_when_has_more_records_false(client):
     assert result["meta"]["total"] == 10
 
 
-def test_request_all_pages_handles_raw_array_short_page(client):
+def test_query_all_pages_handles_raw_array_short_page(client):
+    """Stop raw-array pagination when a page contains fewer records than requested."""
     with patch.object(client, "request_json", return_value=[{"id": 1}]):
-        result = client.request_all_pages(
+        result = client.QueryAllPages(
             scope="deployments",
             end_point="sites",
             limit=100,
@@ -155,7 +164,45 @@ def test_request_all_pages_handles_raw_array_short_page(client):
     assert result["meta"]["limit"] == 1
 
 
-def test_request_all_offset_pages_advances_offset_and_coerces_non_list(client):
+def test_query_all_pages_rejects_invalid_response_shapes(client):
+    """Reject raw-array and envelope responses with invalid JSON shapes."""
+    with (
+        patch.object(client, "request_json", return_value={"id": 1}),
+        pytest.raises(UnexpectedAPIResponse, match="expected an array"),
+    ):
+        client.QueryAllPages(
+            scope="deployments",
+            end_point="sites",
+            limit=100,
+            response_is_array=True,
+        )
+
+    with (
+        patch.object(client, "request_json", return_value=[]),
+        pytest.raises(UnexpectedAPIResponse, match="expected an object"),
+    ):
+        client.QueryAllPages(
+            scope="policies",
+            end_point="destinationlists",
+            limit=100,
+        )
+
+
+def test_query_all_pages_offset_rejects_non_object_response(client):
+    """Reject a non-object response from offset-based pagination."""
+    with (
+        patch.object(client, "request_json", return_value=[]),
+        pytest.raises(UnexpectedAPIResponse, match="expected an object"),
+    ):
+        client.QueryAllPagesOffset(
+            scope="admin",
+            end_point="vpn/userConnections",
+            limit=100,
+        )
+
+
+def test_query_all_pages_offset_advances_offset_and_coerces_non_list(client):
+    """Advance offsets and preserve singleton response coercion."""
     with patch.object(
         client,
         "request_json",
@@ -164,7 +211,7 @@ def test_request_all_offset_pages_advances_offset_and_coerces_non_list(client):
             {"data": {"id": 2}, "total": 2},
         ],
     ) as request_json:
-        result = client.request_all_offset_pages(
+        result = client.QueryAllPagesOffset(
             scope="admin", end_point="vpn/userConnections", limit=1
         )
 
@@ -178,7 +225,8 @@ def test_request_all_offset_pages_advances_offset_and_coerces_non_list(client):
     assert result["total"] == 2
 
 
-def test_request_refreshes_token_once_on_401(client):
+def test_query_refreshes_token_once_on_401(client):
+    """Refresh the token once and retry after an unauthorized response."""
     unauthorized = requests.Response()
     unauthorized.status_code = 401
     unauthorized.url = "https://api.sse.cisco.com/deployments/v2/networkdevices"
@@ -190,6 +238,7 @@ def test_request_refreshes_token_once_on_401(client):
     second_response = _json_response({"ok": True})
 
     def refresh_token():
+        """Set the refreshed token used by the retry assertion."""
         client.token = "refreshed-token"
         return client.token
 
@@ -198,7 +247,7 @@ def test_request_refreshes_token_once_on_401(client):
         patch.object(client, "GetToken", side_effect=refresh_token) as get_token,
     ):
         request.side_effect = [first_response, second_response]
-        result = client.request("deployments", "networkdevices", "GET")
+        result = client.Query("deployments", "networkdevices", "GET")
 
     assert result is second_response
     assert get_token.call_count == 1
@@ -208,6 +257,7 @@ def test_request_refreshes_token_once_on_401(client):
 
 
 def test_passive_dns_forwards_pagination_and_returns_page_info(client):
+    """Forward passive-DNS pagination parameters and return page metadata."""
     payload = {
         "records": [{"name": "example.com", "type": "A", "rr": "192.0.2.1"}],
         "pageInfo": {
@@ -227,6 +277,7 @@ def test_passive_dns_forwards_pagination_and_returns_page_info(client):
 
 
 def test_make_request_verifies_tls_by_default(client):
+    """Enable TLS certificate verification by default for arbitrary requests."""
     with patch("src.sse_api_client.requests.request") as request:
         client.MakeRequest(method="get", endpoint="deployments/v2/networkdevices")
 
@@ -234,6 +285,7 @@ def test_make_request_verifies_tls_by_default(client):
 
 
 def test_query_uses_requests_tls_verification_default(client):
+    """Use requests' default TLS behavior for standard queries."""
     response = MagicMock()
     response.raise_for_status.return_value = None
 
@@ -249,22 +301,16 @@ def test_query_uses_requests_tls_verification_default(client):
 
 
 def test_query_rejects_unsupported_operation(client):
+    """Reject HTTP operations outside the supported operation set."""
     with pytest.raises(ValueError, match="Unsupported operation: trace"):
         client.Query("deployments", "networkdevices", "TRACE")
 
 
-def test_query_wrapper_returns_raw_response(client):
+def test_query_returns_raw_response(client):
+    """Return the raw response from the canonical query method."""
     response = _json_response({"ok": True})
-    with patch.object(client, "request", return_value=response) as request:
+    with patch("src.sse_api_client.requests.request", return_value=response) as request:
         result = client.Query("deployments", "networkdevices", "GET")
 
     assert result is response
-    request.assert_called_once_with(
-        scope="deployments",
-        end_point="networkdevices",
-        operation="GET",
-        request_data=None,
-        files=None,
-        encoder=None,
-        params=None,
-    )
+    request.assert_called_once()
