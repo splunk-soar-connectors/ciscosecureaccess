@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .list_certificates_for_device import list_certificates_for_device
-from .list_certificates_for_user import list_certificates_for_user
-from .list_identities import list_identities
-from .update_identities import update_identities
+# Pagination and validation limits.
+MAX_LIMIT_NETWORK_TUNNEL_GROUPS = 200
+MAX_LIMIT_FIREWALL_RULES = 1000
+MAX_LIMIT_RESOURCE_CONNECTORS = 100
+MAX_IDENTITIES_UPDATE = 250
+MAX_SWG_ORIGIN_IDS = 100
+MAX_DESTINATIONS_CREATE_DESTINATION_LIST = 500
 
-__all__ = [
-    "list_certificates_for_device",
-    "list_certificates_for_user",
-    "list_identities",
-    "update_identities",
-]
+_DESTINATION_CREATE_TYPES = frozenset({"domain", "url", "ipv4"})
+
+# Domain status code to human-readable description.
+DOMAIN_STATUS_DESCRIPTIONS = {-1: "Malicious", 1: "Benign", 0: "Unclassified"}
