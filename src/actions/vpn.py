@@ -12,17 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from soar_sdk.params import Params
+from .list_vpn_sessions import list_vpn_sessions
 
-from ..core import Asset
-from ..outputs import ListVPNSessionsOutput
-
-
-def list_vpn_sessions(params: Params, asset: Asset) -> ListVPNSessionsOutput:
-    """
-    List VPN Sessions.
-    https://developer.cisco.com/docs/cloud-security/list-vpn-connections/
-    """
-    client = asset.get_client()
-    vpn_sessions = client.ListVPNSessions()
-    return ListVPNSessionsOutput(vpn_sessions=vpn_sessions)
+__all__ = ["list_vpn_sessions"]

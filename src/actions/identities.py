@@ -12,85 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..core import (
-    Asset,
-    MAX_IDENTITIES_UPDATE,
-    _parse_json_param,
-)
-from ..outputs import (
-    ListCertificatesForDeviceOutput,
-    ListCertificatesForUserOutput,
-    ListIdentitiesOutput,
-    UpdateIdentitiesOutput,
-)
-from ..params import (
-    ListCertificatesForDeviceParams,
-    ListCertificatesForUserParams,
-    ListIdentitiesParams,
-    UpdateIdentitiesParams,
-)
+from .list_certificates_for_device import list_certificates_for_device
+from .list_certificates_for_user import list_certificates_for_user
+from .list_identities import list_identities
+from .update_identities import update_identities
 
-
-def list_identities(params: ListIdentitiesParams, asset: Asset) -> ListIdentitiesOutput:
-    """
-    List Identities.
-    https://developer.cisco.com/docs/cloud-security/list-identities/
-    """
-    client = asset.get_client()
-    identities = client.ListIdentities(params.type)
-    return ListIdentitiesOutput(identities=identities)
-
-
-def update_identities(
-    params: UpdateIdentitiesParams, asset: Asset
-) -> UpdateIdentitiesOutput:
-    """
-    Update Identities (devices or security group tags).
-    PUT /identities/registrations/{type}. Pass 1-250 identity objects as JSON array in identities_json.
-    https://developer.cisco.com/docs/cloud-security/update-identities/
-    """
-    client = asset.get_client()
-    identity_type = params.type.strip().lower()
-    if identity_type not in ("device", "securitygrouptag"):
-        raise ValueError("type must be 'device' or 'securityGroupTag'")
-    if identity_type == "securitygrouptag":
-        identity_type = "securityGroupTag"
-    identities_list = _parse_json_param(
-        params.identities_json, "identities_json", allow_list=True
-    )
-    if len(identities_list) < 1 or len(identities_list) > MAX_IDENTITIES_UPDATE:
-        raise ValueError("identities_json must contain 1-250 items")
-    data = client.UpdateIdentities(identity_type, identities_list)
-    return UpdateIdentitiesOutput(success=data.get("success"))
-
-
-def list_certificates_for_device(
-    params: ListCertificatesForDeviceParams, asset: Asset
-) -> ListCertificatesForDeviceOutput:
-    """
-    List Certificates for Device (ZTNA).
-    GET /ztna/users/{userId}/devices/{deviceId}/certificates. Returns ACME-issued certificate info for the user device.
-    https://developer.cisco.com/docs/cloud-security/list-certificates-for-device/
-    """
-    client = asset.get_client()
-    data = client.ListCertificatesForDevice(params.user_id, params.device_id)
-    return ListCertificatesForDeviceOutput(
-        deviceId=data.get("deviceId"),
-        certificates=data.get("certificates"),
-    )
-
-
-def list_certificates_for_user(
-    params: ListCertificatesForUserParams, asset: Asset
-) -> ListCertificatesForUserOutput:
-    """
-    List Certificates for User (ZTNA).
-    GET /ztna/users/{userId}/deviceCertificates. Returns all device certificates for the zero trust user.
-    https://developer.cisco.com/docs/cloud-security/list-certificates-for-user/
-    """
-    client = asset.get_client()
-    data = client.ListCertificatesForUser(params.user_id)
-    return ListCertificatesForUserOutput(
-        userId=data.get("userId"),
-        devices=data.get("devices"),
-    )
+__all__ = [
+    "list_certificates_for_device",
+    "list_certificates_for_user",
+    "list_identities",
+    "update_identities",
+]
