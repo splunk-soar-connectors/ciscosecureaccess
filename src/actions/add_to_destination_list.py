@@ -12,11 +12,63 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.params import Param, Params
+
 from ..asset import Asset
-from ..destination_helpers import _find_added_destination_row, flatten_field
-from ..outputs import AddToDestinationListOutput
-from ..params import AddToDestinationListParams
+from ..destination_helpers import flatten_field
 from ..sse_api_client import GET, POST, policies
+from .list_destination_lists import DestinationList
+
+
+class AddToDestinationListParams(Params):
+    destination_list_id: int = Param(
+        required=False,
+        description="Destination List ID. If not provided, the default destination list ID will be used.",
+    )
+    destination: str = Param(
+        required=True, description="Destination URL, domain, or IP address"
+    )
+    comment: str = Param(required=False, description="Comment for the destination")
+
+
+class AddToDestinationListOutput(ActionOutput):
+    addedDestinationId: str | None = None
+    destinationList: DestinationList
+
+
+def _normalize_destination_for_match(value: str) -> str:
+    """Normalize a destination value for case-insensitive matching."""
+    return (value or "").strip().lower()
+
+
+def _find_added_destination_row(
+    rows: list,
+    *,
+    destination: str,
+    comment: str | None,
+) -> dict | None:
+    """Find the newly added destination row by destination and optional comment."""
+    if not isinstance(rows, list) or not rows:
+        return None
+    want = _normalize_destination_for_match(destination)
+    matches_dest: list[dict] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if _normalize_destination_for_match(str(row.get("destination") or "")) != want:
+            continue
+        matches_dest.append(row)
+    if not matches_dest:
+        return None
+    if comment is not None:
+        with_comment = [r for r in matches_dest if (r.get("comment") or "") == comment]
+        if with_comment:
+            matches_dest = with_comment
+
+    return sorted(
+        matches_dest, key=lambda row: str(row.get("createdAt") or ""), reverse=True
+    )[0]
 
 
 def add_to_destination_list(
@@ -47,7 +99,7 @@ def add_to_destination_list(
     if isinstance(destination_list, dict) and destination_list.get("meta") is not None:
         destination_list = flatten_field([destination_list], "meta")[0]
     added_id = None
-    destinations_response = client.QueryAllPages(
+    destinations_response = client.query_all_pages(
         scope=policies,
         end_point=f"destinationlists/{destination_list_id}/destinations",
         operation=GET,

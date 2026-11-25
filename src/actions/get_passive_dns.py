@@ -12,10 +12,55 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.params import Param, Params
+
 from ..asset import Asset
-from ..outputs import GetPassiveDNSOutput
-from ..params import GetPassiveDNSParams
 from ..sse_api_client import GET, PDNS_DEFAULT_LIMIT, PDNS_MAX_LIMIT, investigate
+
+
+class GetPassiveDNSParams(Params):
+    """Parameters for Get Passive DNS. GET investigate/v2/pdns/name/{domain}."""
+
+    domain: str = Param(
+        required=True, description="The domain to get passive DNS records for."
+    )
+    offset: int = Param(
+        required=False,
+        default=0,
+        description="Index to start reading the collection (0-based). Default 0.",
+    )
+    limit: int = Param(
+        required=False,
+        default=1000,
+        description="Maximum records to return in one call (1-9999). Default 1000. "
+        "Use 9999 to retrieve the full set in a single call; the API caps total "
+        "retrievable records at 10000 per domain.",
+    )
+
+
+class PassiveDNS(ActionOutput):
+    minTtl: int | None = None
+    maxTtl: int | None = None
+    firstSeen: int | None = None
+    lastSeen: int | None = None
+    name: str | None = None
+    type: str | None = None
+    rr: str | None = None
+    securityCategories: list[str] | None = None
+    contentCategories: list[str] | None = None
+    firstSeenISO: str | None = None
+    lastSeenISO: str | None = None
+
+
+class GetPassiveDNSOutput(ActionOutput):
+    passive_dns_records: list[PassiveDNS] | None = None
+    total_records: int | None = None
+    returned_records: int | None = None
+    offset: int | None = None
+    limit: int | None = None
+    has_more_records: bool | None = None
+    next_offset: int | None = None
 
 
 def get_passive_dns(params: GetPassiveDNSParams, asset: Asset) -> GetPassiveDNSOutput:

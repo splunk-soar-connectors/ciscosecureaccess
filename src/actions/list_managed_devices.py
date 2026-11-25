@@ -12,12 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
 from soar_sdk.params import Params
 
 from ..asset import Asset
-from ..outputs import ListManagedDevicesOutput
-from ..sse_api_client import GET, deployments
 from ..response_handling import require_list
+from ..sse_api_client import GET, deployments
+
+
+class ManagedDevice(ActionOutput):
+    originId: int
+    deviceId: str
+    deviceKey: str
+    name: str
+    serialNumber: str
+    createdAt: str
+    organizationId: int
+
+
+class ListManagedDevicesOutput(ActionOutput):
+    devices: list[ManagedDevice]
 
 
 def list_managed_devices(params: Params, asset: Asset) -> ListManagedDevicesOutput:

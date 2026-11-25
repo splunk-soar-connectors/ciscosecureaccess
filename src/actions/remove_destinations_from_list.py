@@ -12,11 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.params import Param, Params
+
 from ..asset import Asset
 from ..input_helpers import _parse_comma_list
-from ..outputs import RemoveDestinationsFromListOutput
-from ..params import RemoveDestinationsFromListParams
 from ..sse_api_client import DELETE, policies
+from .list_destination_lists import DestinationList
+
+
+class RemoveDestinationsFromListParams(Params):
+    destination_list_id: int = Param(
+        required=False,
+        description="The ID of the Destination List to remove destinations from. If not provided, the default destination list ID will be used.",
+    )
+    destination_ids: str = Param(
+        required=True,
+        description="Comma-separated destination IDs to remove (e.g. 60582,60583).",
+    )
+
+
+class RemoveDestinationsFromListOutput(ActionOutput):
+    destinationList: DestinationList
 
 
 def remove_destinations_from_list(

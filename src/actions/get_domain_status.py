@@ -12,11 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.params import Param, Params
+
 from ..asset import Asset
 from ..constants import DOMAIN_STATUS_DESCRIPTIONS
-from ..outputs import GetDomainStatusOutput
-from ..params import GetDomainParams
 from ..sse_api_client import GET, investigate
+
+
+class GetDomainParams(Params):
+    domain: str = Param(
+        required=True, description="Domain name to look up (e.g. cisco.com)."
+    )
+
+
+class GetDomainStatusOutput(ActionOutput):
+    domain: str
+    status: int | None = None
+    status_description: str | None = None
+    security_categories: list[str] | None = None
+    content_categories: list[str] | None = None
 
 
 def get_domain_status(params: GetDomainParams, asset: Asset) -> GetDomainStatusOutput:

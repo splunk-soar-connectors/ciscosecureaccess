@@ -19,20 +19,16 @@ import requests
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.params import Params
 
-from src.actions.create_destination_list import create_destination_list
-from src.actions.domains import get_passive_dns
-from src.actions.list_firewall_rules import list_firewall_rules
+from src.actions.create_destination_list import (
+    CreateDestinationListParams,
+    create_destination_list,
+)
+from src.actions.create_rule import CreateRuleParams, create_rule
+from src.actions.get_passive_dns import GetPassiveDNSParams, get_passive_dns
+from src.actions.list_firewall_rules import ListFirewallRulesParams, list_firewall_rules
 from src.actions.list_sites import list_sites
 from src.actions.list_vpn_sessions import list_vpn_sessions
-from src.actions.make_request import make_request
-from src.actions.rules import create_rule
-from src.params import (
-    CiscoSecureAccessMakeRequestParams,
-    CreateDestinationListParams,
-    CreateRuleParams,
-    GetPassiveDNSParams,
-    ListFirewallRulesParams,
-)
+from src.actions.make_request import CiscoSecureAccessMakeRequestParams, make_request
 
 
 def test_get_passive_dns_maps_pagination_output():
@@ -71,7 +67,7 @@ def test_get_passive_dns_maps_pagination_output():
 def test_list_sites_uses_paginated_transport():
     """Use page-numbered transport when listing sites."""
     client = MagicMock()
-    client.QueryAllPages.return_value = {
+    client.query_all_pages.return_value = {
         "data": [
             {
                 "originId": 1,
@@ -89,7 +85,7 @@ def test_list_sites_uses_paginated_transport():
     output = list_sites(Params(), asset)
 
     assert output.sites[0].name == "site"
-    client.QueryAllPages.assert_called_once_with(
+    client.query_all_pages.assert_called_once_with(
         scope="deployments",
         end_point="sites",
         operation="get",
@@ -101,14 +97,14 @@ def test_list_sites_uses_paginated_transport():
 def test_list_vpn_sessions_uses_offset_paginated_transport():
     """Use offset pagination when listing VPN sessions."""
     client = MagicMock()
-    client.QueryAllPagesOffset.return_value = {"data": [{"username": "user"}]}
+    client.query_all_pages_offset.return_value = {"data": [{"username": "user"}]}
     asset = MagicMock()
     asset.get_client.return_value = client
 
     output = list_vpn_sessions(Params(), asset)
 
     assert output.vpn_sessions[0].username == "user"
-    client.QueryAllPagesOffset.assert_called_once_with(
+    client.query_all_pages_offset.assert_called_once_with(
         scope="admin",
         end_point="vpn/userConnections",
         operation="get",
@@ -216,7 +212,7 @@ def test_make_request_passes_supported_methods_to_client(
     """Forward supported arbitrary-request parameters to the API client."""
     response = MagicMock(status_code=200, text='{"ok": true}')
     client = MagicMock()
-    client.MakeRequest.return_value = response
+    client.make_request.return_value = response
     asset = MagicMock()
     asset.get_client.return_value = client
     params = CiscoSecureAccessMakeRequestParams(
@@ -231,7 +227,7 @@ def test_make_request_passes_supported_methods_to_client(
 
     output = make_request(params, asset)
 
-    client.MakeRequest.assert_called_once_with(
+    client.make_request.assert_called_once_with(
         method=http_method,
         endpoint=endpoint,
         headers={"X-Test": "value"},
@@ -260,7 +256,7 @@ def test_make_request_rejects_invalid_endpoint(endpoint):
 def test_make_request_wraps_client_errors():
     """Convert client exceptions into an action failure."""
     client = MagicMock()
-    client.MakeRequest.side_effect = RuntimeError("request failed")
+    client.make_request.side_effect = RuntimeError("request failed")
     asset = MagicMock()
     asset.get_client.return_value = client
     params = CiscoSecureAccessMakeRequestParams(

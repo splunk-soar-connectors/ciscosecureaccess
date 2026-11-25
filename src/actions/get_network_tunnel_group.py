@@ -12,11 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.params import Param, Params
+
 from ..asset import Asset
-from ..output_helpers import _output_from_api_data
-from ..outputs import GetNetworkTunnelGroupOutput
-from ..params import GetNetworkTunnelGroupParams
+from ..response_handling import require_mapping
 from ..sse_api_client import GET, deployments
+from .list_network_tunnel_groups import NetworkTunnelGroupHub, NetworkTunnelGroupRouting
+
+
+class GetNetworkTunnelGroupParams(Params):
+    """Parameters for Get Network Tunnel Group. GET deployments/v2/networktunnelgroups/{id}. Requires deployments.networktunnelgroups:read."""
+
+    id: int = Param(
+        required=True,
+        description="ID of the network tunnel group (obtain from the List Network Tunnel Groups action).",
+    )
+
+
+class GetNetworkTunnelGroupOutput(ActionOutput):
+    """Response from Get Network Tunnel Group API (GET deployments/v2/networktunnelgroups/{id}). Same shape as NetworkTunnelGroup."""
+
+    id: int | None = None
+    name: str | None = None
+    organizationId: int | None = None
+    deviceType: str | None = None
+    region: str | None = None
+    status: str | None = None
+    hubs: list[NetworkTunnelGroupHub] | None = None
+    routing: NetworkTunnelGroupRouting | None = None
+    createdAt: str | None = None
+    modifiedAt: str | None = None
 
 
 def get_network_tunnel_group(
@@ -33,4 +59,5 @@ def get_network_tunnel_group(
         end_point=f"networktunnelgroups/{params.id}",
         operation=GET,
     )
-    return _output_from_api_data(GetNetworkTunnelGroupOutput, data)
+    data = require_mapping(data, "GetNetworkTunnelGroupOutput output")
+    return GetNetworkTunnelGroupOutput(**data)

@@ -12,12 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.params import Param, Params
+
 from ..asset import Asset
 from ..input_helpers import _parse_origin_ids
-from ..outputs import DeleteSWGOverrideDeviceSettingsOutput
-from ..params import DeleteSWGOverrideDeviceSettingsParams
-from ..output_helpers import _output_from_api_data
+from ..response_handling import require_mapping
 from ..sse_api_client import POST, deployments
+
+
+class DeleteSWGOverrideDeviceSettingsParams(Params):
+    """Parameters for Delete SWG Override Device Settings. POST deployments/v2/deviceSettings/SWGEnabled/remove. Requires deployments.devices.swg:write."""
+
+    origin_ids: str = Param(
+        required=True,
+        description="Comma-separated origin IDs of devices (1-100) to remove SWG override setting from. Organization SWG setting will apply after removal.",
+    )
+
+
+class DeleteSWGOverrideDeviceSettingsOutput(ActionOutput):
+    """Response from Delete SWG Override Device Settings (POST deployments/v2/deviceSettings/SWGEnabled/remove)."""
+
+    status: str | None = None
 
 
 def delete_swg_override_device_settings(
@@ -37,4 +53,5 @@ def delete_swg_override_device_settings(
         operation=POST,
         request_data={"originIds": origin_ids},
     )
-    return _output_from_api_data(DeleteSWGOverrideDeviceSettingsOutput, data)
+    data = require_mapping(data, "DeleteSWGOverrideDeviceSettingsOutput output")
+    return DeleteSWGOverrideDeviceSettingsOutput(**data)

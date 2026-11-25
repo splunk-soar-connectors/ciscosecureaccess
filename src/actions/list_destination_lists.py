@@ -12,11 +12,54 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.params import Param, Params
+
 from ..asset import Asset
 from ..destination_helpers import flatten_field
-from ..outputs import ListDestinationListsOutput
-from ..params import ListDestinationListsParams
 from ..sse_api_client import GET, policies
+
+
+class ListDestinationListsParams(Params):
+    list_destinations: bool = Param(
+        required=False,
+        default=False,
+        description="If true, also fetch and embed each list's destination entries. "
+        "Default false (returns list metadata only).",
+    )
+
+
+class Destination(ActionOutput):
+    id: str
+    type: str
+    createdAt: str
+    destination: str | None = None
+    comment: str | None = None
+
+
+class DestinationList(ActionOutput):
+    id: int
+    organizationId: int
+    access: str
+    isGlobal: bool
+    name: str
+    thirdpartyCategoryId: int | None = None  # API may return null
+    createdAt: int
+    modifiedAt: int
+    isMspDefault: bool
+    markedForDeletion: bool
+    bundleTypeId: int | None = None
+    destinationCount: int | None = None
+    domainCount: int | None = None
+    urlCount: int | None = None
+    ipv4Count: int | None = None
+    ipv6Count: int | None = None
+    applicationCount: int | None = None
+    destinations: list[Destination] | None = None
+
+
+class ListDestinationListsOutput(ActionOutput):
+    destinationLists: list[DestinationList]
 
 
 def list_destination_lists(
@@ -27,7 +70,7 @@ def list_destination_lists(
     https://developer.cisco.com/docs/cloud-security/get-destination-lists/
     """
     client = asset.get_client()
-    destination_list_response = client.QueryAllPages(
+    destination_list_response = client.query_all_pages(
         scope=policies, end_point="destinationlists", operation=GET
     )
     destination_lists = destination_list_response["data"]
@@ -35,7 +78,7 @@ def list_destination_lists(
     if params.list_destinations:
         destination_lists_output = []
         for destination_list in destination_lists:
-            destinations_response = client.QueryAllPages(
+            destinations_response = client.query_all_pages(
                 scope=policies,
                 end_point=f"destinationlists/{destination_list['id']}/destinations",
                 operation=GET,

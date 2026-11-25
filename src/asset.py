@@ -14,9 +14,7 @@
 
 from soar_sdk.asset import AssetField
 from soar_sdk.asset import BaseAsset
-from soar_sdk.exceptions import ActionFailure
 
-from .error_handling import format_action_error
 from .sse_api_client import SSE_API
 
 
@@ -47,16 +45,3 @@ class Asset(BaseAsset):
             self.client_secret,
             auth_header_name=self.auth_header_name,
         )
-
-
-def test_connectivity(asset: Asset) -> None:
-    """Test OAuth connectivity against the Cisco Secure Access API."""
-    client = asset.get_client()
-    try:
-        token = client.GetToken()
-    except Exception as exc:
-        raise ActionFailure(
-            format_action_error("Connectivity test failed", exc)
-        ) from exc
-    if not token:
-        raise ActionFailure("Unable to get auth token")

@@ -12,11 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
 from soar_sdk.params import Params
 
 from ..asset import Asset
-from ..outputs import ListSitesOutput
 from ..sse_api_client import GET, deployments
+
+
+class Site(ActionOutput):
+    originId: int
+    name: str
+    siteId: int
+    isDefault: bool
+    modifiedAt: str
+    createdAt: str
+    type: str | None = None
+    internalNetworkCount: int | None = None
+    vaCount: int | None = None
+
+
+class ListSitesOutput(ActionOutput):
+    sites: list[Site]
 
 
 def list_sites(params: Params, asset: Asset) -> ListSitesOutput:
@@ -26,7 +42,7 @@ def list_sites(params: Params, asset: Asset) -> ListSitesOutput:
     https://developer.cisco.com/docs/cloud-security/list-sites/
     """
     client = asset.get_client()
-    result = client.QueryAllPages(
+    result = client.query_all_pages(
         scope=deployments,
         end_point="sites",
         operation=GET,

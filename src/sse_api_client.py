@@ -95,7 +95,7 @@ class SSE_API:
             headers["Content-Type"] = content_type
         return headers
 
-    def GetToken(self):
+    def get_token(self):
         """Fetch and store an OAuth access token for subsequent API requests."""
         auth = HTTPBasicAuth(self.client_id, self.client_secret)
         client = BackendApplicationClient(client_id=self.client_id)
@@ -112,7 +112,7 @@ class SSE_API:
         self.token = token_response.get("access_token")
         return self.token
 
-    def Query(
+    def query(
         self,
         scope,
         end_point,
@@ -127,7 +127,7 @@ class SSE_API:
         request_url = f"{base_uri}/{str(end_point).lstrip('/')}"
         operation = operation.lower()
         if self.token is None:
-            self.GetToken()
+            self.get_token()
 
         for attempt in range(2):
             try:
@@ -153,7 +153,7 @@ class SSE_API:
                 req.raise_for_status()
                 return req
             except TokenExpiredError:
-                self.GetToken()
+                self.get_token()
             except HTTPError as exc:
                 response = exc.response
                 if (
@@ -161,7 +161,7 @@ class SSE_API:
                     and response is not None
                     and response.status_code == 401
                 ):
-                    self.GetToken()
+                    self.get_token()
                     continue
                 raise
 
@@ -169,9 +169,9 @@ class SSE_API:
 
     def request_json(self, *args, **kwargs):
         """Execute a query and return its decoded JSON response body."""
-        return self.Query(*args, **kwargs).json()
+        return self.query(*args, **kwargs).json()
 
-    def QueryAllPages(
+    def query_all_pages(
         self,
         scope,
         end_point,
@@ -236,7 +236,7 @@ class SSE_API:
             "data": all_data,
         }
 
-    def QueryAllPagesOffset(
+    def query_all_pages_offset(
         self,
         scope,
         end_point,
@@ -283,12 +283,12 @@ class SSE_API:
             "total": total if total is not None else len(all_data),
         }
 
-    def ParseJsonResponse(self, res: requests.Response):
+    def parse_json_response(self, res: requests.Response):
         """Decode and return a requests response JSON body."""
         json_response = res.json()
         return json_response
 
-    def MakeRequest(
+    def make_request(
         self,
         *,
         method: str,
@@ -302,7 +302,7 @@ class SSE_API:
     ) -> requests.Response:
         """Execute an arbitrary Cisco Secure Access API request with asset auth."""
         if self.token is None:
-            self.GetToken()
+            self.get_token()
 
         request_headers = {
             self.auth_header_name: BEARER_PREFIX + self.token,
@@ -328,17 +328,17 @@ class SSE_API:
             verify=verify_ssl,
         )
 
-    def ListNetworkDevices(self):
+    def list_network_devices(self):
         """List managed network devices in the organization."""
-        res = self.Query(scope="deployments", end_point="networkdevices", operation=GET)
+        res = self.query(scope="deployments", end_point="networkdevices", operation=GET)
         return require_list(
-            self.ParseJsonResponse(res), "list network devices response"
+            self.parse_json_response(res), "list network devices response"
         )
 
-    def DeleteNetworkDevice(self, origin_id: int):
+    def delete_network_device(self, origin_id: int):
         """DELETE deployments/v2/networkdevices/{originId}. Remove a network device."""
         end_point = f"networkdevices/{origin_id}"
-        res = self.Query(
+        res = self.query(
             scope="deployments",
             end_point=end_point,
             operation=DELETE,
@@ -346,25 +346,25 @@ class SSE_API:
         )
         if res.status_code in (200, 204) and not res.text.strip():
             return {"success": True, "message": "Network device removed"}
-        return self.ParseJsonResponse(res)
+        return self.parse_json_response(res)
 
-    def GetNetworkDevice(self, origin_id: int):
+    def get_network_device(self, origin_id: int):
         """
         Get a network device by origin ID.
         GET deployments/v2/networkdevices/{originId}. Requires deployments.networkdevices:read.
         See: https://developer.cisco.com/docs/cloud-security/get-network-device/
         """
         end_point = f"networkdevices/{origin_id}"
-        res = self.Query(scope="deployments", end_point=end_point, operation=GET)
-        return self.ParseJsonResponse(res)
+        res = self.query(scope="deployments", end_point=end_point, operation=GET)
+        return self.parse_json_response(res)
 
-    def ListSites(self):
+    def list_sites(self):
         """
         List all Sites in the organization.
         GET deployments/v2/sites. Requires deployments.sites:read.
         See: https://developer.cisco.com/docs/cloud-security/list-sites/
         """
-        res = self.QueryAllPages(
+        res = self.query_all_pages(
             scope="deployments",
             end_point="sites",
             operation=GET,
@@ -373,9 +373,9 @@ class SSE_API:
         )
         return res["data"]
 
-    def ListVirtualAppliances(self):
+    def list_virtual_appliances(self):
         """List virtual appliances in the organization."""
-        res = self.QueryAllPages(
+        res = self.query_all_pages(
             scope="deployments",
             end_point="virtualappliances",
             operation=GET,
@@ -384,9 +384,9 @@ class SSE_API:
         )
         return res["data"]
 
-    def ListVPNSessions(self):
+    def list_vpn_sessions(self):
         """List user VPN sessions in the organization."""
-        res = self.QueryAllPagesOffset(
+        res = self.query_all_pages_offset(
             scope=admin,
             end_point="vpn/userConnections",
             operation=GET,
@@ -394,9 +394,9 @@ class SSE_API:
         )
         return res["data"]
 
-    def ListRoamingComputers(self):
+    def list_roaming_computers(self):
         """List roaming computers in the organization."""
-        res = self.QueryAllPages(
+        res = self.query_all_pages(
             scope="deployments",
             end_point="roamingcomputers",
             operation=GET,
@@ -405,13 +405,13 @@ class SSE_API:
         )
         return res["data"]
 
-    def GetRoamingComputer(self, device_id):
+    def get_roaming_computer(self, device_id):
         """GET deployments/v2/roamingcomputers/{deviceId}. Returns posture/security status for the device."""
         end_point = f"roamingcomputers/{device_id}"
-        res = self.Query(scope=deployments, end_point=end_point, operation=GET)
-        return self.ParseJsonResponse(res)
+        res = self.query(scope=deployments, end_point=end_point, operation=GET)
+        return self.parse_json_response(res)
 
-    def ListSWGOverrideDeviceSettings(self, origin_ids: list):
+    def list_swg_override_device_settings(self, origin_ids: list):
         """
         List SWG override device settings for given origin IDs.
         POST deployments/v2/deviceSettings/SWGEnabled/list. Requires deployments.devices.swg:read.
@@ -419,12 +419,12 @@ class SSE_API:
         """
         end_point = "deviceSettings/SWGEnabled/list"
         body = {"originIds": origin_ids}
-        res = self.Query(
+        res = self.query(
             scope=deployments, end_point=end_point, operation=POST, request_data=body
         )
-        return self.ParseJsonResponse(res)
+        return self.parse_json_response(res)
 
-    def SetSWGOverrideDeviceSettings(self, value: str, origin_ids: list):
+    def set_swg_override_device_settings(self, value: str, origin_ids: list):
         """
         Set SWG override device settings for given origin IDs.
         POST deployments/v2/deviceSettings/SWGEnabled/set. Requires deployments.devices.swg:write.
@@ -432,12 +432,12 @@ class SSE_API:
         """
         end_point = "deviceSettings/SWGEnabled/set"
         body = {"value": value, "originIds": origin_ids}
-        res = self.Query(
+        res = self.query(
             scope=deployments, end_point=end_point, operation=POST, request_data=body
         )
-        return self.ParseJsonResponse(res)
+        return self.parse_json_response(res)
 
-    def DeleteSWGOverrideDeviceSettings(self, origin_ids: list):
+    def delete_swg_override_device_settings(self, origin_ids: list):
         """
         Remove SWG override device settings for given origin IDs.
         POST deployments/v2/deviceSettings/SWGEnabled/remove. Requires deployments.devices.swg:write.
@@ -445,19 +445,19 @@ class SSE_API:
         """
         end_point = "deviceSettings/SWGEnabled/remove"
         body = {"originIds": origin_ids}
-        res = self.Query(
+        res = self.query(
             scope=deployments, end_point=end_point, operation=POST, request_data=body
         )
-        return self.ParseJsonResponse(res)
+        return self.parse_json_response(res)
 
-    def ListDestinationLists(self):
+    def list_destination_lists(self):
         """List destination lists in the organization."""
-        result = self.QueryAllPages(
+        result = self.query_all_pages(
             scope=policies, end_point="destinationlists", operation=GET
         )
         return result["data"]
 
-    def CreateDestinationList(self, body: dict):
+    def create_destination_list(self, body: dict):
         """
         Create a destination list in the organization.
         POST policies/v2/destinationlists. Requires policies.destinationLists:write.
@@ -471,25 +471,25 @@ class SSE_API:
         Returns:
             Parsed JSON (typically includes status and data with the new list metadata).
         """
-        res = self.Query(
+        res = self.query(
             scope=policies,
             end_point="destinationlists",
             operation=POST,
             request_data=body,
         )
-        return self.ParseJsonResponse(res)
+        return self.parse_json_response(res)
 
-    def GetDestinationsFromListById(self, destination_list_id):
+    def get_destinations_from_list_by_id(self, destination_list_id):
         """List destinations belonging to a destination list."""
         end_point_destination_list_id = (
             f"destinationlists/{destination_list_id}/destinations"
         )
-        result = self.QueryAllPages(
+        result = self.query_all_pages(
             scope=policies, end_point=end_point_destination_list_id, operation=GET
         )
         return result["data"]
 
-    def AddToDestinationList(self, destination_list_id, destination, comment=None):
+    def add_to_destination_list(self, destination_list_id, destination, comment=None):
         """
         Add one destination (and optional comment) to a destination list.
         API: POST policies/v2/destinationlists/{destinationListId}/destinations
@@ -507,38 +507,38 @@ class SSE_API:
         if comment is not None:
             obj["comment"] = comment
         payload = [obj]
-        res = self.Query(
+        res = self.query(
             scope=policies, end_point=end_point, operation=POST, request_data=payload
         )
-        return self.ParseJsonResponse(res)
+        return self.parse_json_response(res)
 
-    def RemoveDestinationsFromList(self, destination_list_id, destination_ids):
+    def remove_destinations_from_list(self, destination_list_id, destination_ids):
         """Remove destination entries from a destination list."""
         end_point_destination_list_id = (
             f"destinationlists/{destination_list_id}/destinations/remove"
         )
         destination_remove_object = destination_ids
-        res = self.Query(
+        res = self.query(
             scope=policies,
             end_point=end_point_destination_list_id,
             operation=DELETE,
             request_data=destination_remove_object,
         )
-        return self.ParseJsonResponse(res)["data"]
+        return self.parse_json_response(res)["data"]
 
-    def GetDomainStatus(self, domain):
+    def get_domain_status(self, domain):
         """Get the categorization status for a domain."""
         end_point_domain = f"domains/categorization/{domain}?showLabels"
-        res = self.Query(scope=investigate, end_point=end_point_domain, operation=GET)
-        return self.ParseJsonResponse(res)
+        res = self.query(scope=investigate, end_point=end_point_domain, operation=GET)
+        return self.parse_json_response(res)
 
-    def GetDomainRiskScore(self, domain):
+    def get_domain_risk_score(self, domain):
         """Get the risk score for a domain."""
         end_point_domain = f"domains/risk-score/{domain}"
-        res = self.Query(scope=investigate, end_point=end_point_domain, operation=GET)
-        return self.ParseJsonResponse(res)
+        res = self.query(scope=investigate, end_point=end_point_domain, operation=GET)
+        return self.parse_json_response(res)
 
-    def GetPassiveDNS(self, domain, offset=0, limit=PDNS_DEFAULT_LIMIT):
+    def get_passive_dns(self, domain, offset=0, limit=PDNS_DEFAULT_LIMIT):
         """
         Get passive DNS (historical resolution) records for a domain.
 
@@ -578,10 +578,10 @@ class SSE_API:
         page_info = require_mapping(raw_page_info, "passive DNS page information")
         return records, page_info
 
-    def ListIdentities(self, registration_type):
+    def list_identities(self, registration_type):
         """List registered identities for the specified identity type."""
         end_point_identities = f"identities/registrations/{registration_type}"
-        res = self.QueryAllPagesOffset(
+        res = self.query_all_pages_offset(
             scope=deployments,
             end_point=end_point_identities,
             operation=GET,
@@ -589,30 +589,30 @@ class SSE_API:
         )
         return res["data"]
 
-    def UpdateIdentities(self, identity_type, identities_list):
+    def update_identities(self, identity_type, identities_list):
         """PUT identities/registrations/{type}. identity_type: 'device' or 'securityGroupTag'. identities_list: list of dicts (1-250)."""
         end_point = f"identities/registrations/{identity_type}"
-        res = self.Query(
+        res = self.query(
             scope=deployments,
             end_point=end_point,
             operation=PUT,
             request_data=identities_list,
         )
-        return self.ParseJsonResponse(res)
+        return self.parse_json_response(res)
 
-    def ListCertificatesForDevice(self, user_id, device_id):
+    def list_certificates_for_device(self, user_id, device_id):
         """GET ztna/users/{userId}/devices/{deviceId}/certificates (admin/v2). Returns deviceId and certificates list."""
         end_point = f"ztna/users/{user_id}/devices/{device_id}/certificates"
-        res = self.Query(scope=admin, end_point=end_point, operation=GET)
-        return self.ParseJsonResponse(res)
+        res = self.query(scope=admin, end_point=end_point, operation=GET)
+        return self.parse_json_response(res)
 
-    def ListCertificatesForUser(self, user_id):
+    def list_certificates_for_user(self, user_id):
         """GET ztna/users/{userId}/deviceCertificates (admin/v2). Returns userId and devices (each with deviceId, certificates)."""
         end_point = f"ztna/users/{user_id}/deviceCertificates"
-        res = self.Query(scope=admin, end_point=end_point, operation=GET)
-        return self.ParseJsonResponse(res)
+        res = self.query(scope=admin, end_point=end_point, operation=GET)
+        return self.parse_json_response(res)
 
-    def ListFirewallRules(self, offset=0, limit=10, rule_name=None, filters=None):
+    def list_firewall_rules(self, offset=0, limit=10, rule_name=None, filters=None):
         """
         List access rules in the organization's Access policy.
         GET policies/v2/rules. Requires policies.rules:read.
@@ -624,12 +624,12 @@ class SSE_API:
             params["ruleName"] = rule_name
         if filters is not None:
             params["filters"] = _encode_filters(filters)
-        res = self.Query(
+        res = self.query(
             scope=policies, end_point=end_point, operation=GET, params=params
         )
-        return self.ParseJsonResponse(res)
+        return self.parse_json_response(res)
 
-    def CreateRule(self, body):
+    def create_rule(self, body):
         """
         Create an access rule on the organization's Access policy.
         POST policies/v2/rules. Requires policies.rules:write.
@@ -638,12 +638,12 @@ class SSE_API:
               ruleDescription, rulePriority, ruleIsEnabled (optional).
         """
         end_point = "rules"
-        res = self.Query(
+        res = self.query(
             scope=policies, end_point=end_point, operation=POST, request_data=body
         )
-        return self.ParseJsonResponse(res)
+        return self.parse_json_response(res)
 
-    def ListNetworkTunnelGroups(
+    def list_network_tunnel_groups(
         self,
         offset=0,
         limit=10,
@@ -667,22 +667,22 @@ class SSE_API:
         }
         if filters is not None:
             params["filters"] = _encode_filters(filters)
-        res = self.Query(
+        res = self.query(
             scope=deployments, end_point=end_point, operation=GET, params=params
         )
-        return self.ParseJsonResponse(res)
+        return self.parse_json_response(res)
 
-    def GetNetworkTunnelGroup(self, ntg_id: int):
+    def get_network_tunnel_group(self, ntg_id: int):
         """
         Get a Network Tunnel Group by ID.
         GET deployments/v2/networktunnelgroups/{id}. Requires deployments.networktunnelgroups:read.
         See: https://developer.cisco.com/docs/cloud-security/get-network-tunnel-group/
         """
         end_point = f"networktunnelgroups/{ntg_id}"
-        res = self.Query(scope=deployments, end_point=end_point, operation=GET)
-        return self.ParseJsonResponse(res)
+        res = self.query(scope=deployments, end_point=end_point, operation=GET)
+        return self.parse_json_response(res)
 
-    def ListResourceConnectors(
+    def list_resource_connectors(
         self,
         offset=0,
         limit=10,
@@ -704,7 +704,7 @@ class SSE_API:
         }
         if filters is not None:
             params["filters"] = _encode_filters(filters)
-        res = self.Query(
+        res = self.query(
             scope=deployments, end_point=end_point, operation=GET, params=params
         )
-        return self.ParseJsonResponse(res)
+        return self.parse_json_response(res)

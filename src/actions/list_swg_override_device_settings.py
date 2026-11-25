@@ -12,12 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.params import Param, Params
+
 from ..asset import Asset
 from ..input_helpers import _parse_origin_ids
-from ..outputs import ListSWGOverrideDeviceSettingsOutput
-from ..params import ListSWGOverrideDeviceSettingsParams
 from ..response_handling import require_list
 from ..sse_api_client import POST, deployments
+
+
+class ListSWGOverrideDeviceSettingsParams(Params):
+    """Parameters for List SWG Override Device Settings. POST deployments/v2/deviceSettings/SWGEnabled/list. Requires deployments.devices.swg:read."""
+
+    origin_ids: str = Param(
+        required=True,
+        description="Comma-separated origin IDs of devices (1-100) to list SWG override settings for.",
+    )
+
+
+class SWGOverrideSettingItem(ActionOutput):
+    """SWG override setting for one device from List SWG Override Device Settings API."""
+
+    originId: int
+    name: str
+    value: str
+    modifiedAt: str
+
+
+class ListSWGOverrideDeviceSettingsOutput(ActionOutput):
+    """Response from List SWG Override Device Settings (POST deployments/v2/deviceSettings/SWGEnabled/list)."""
+
+    settings: list[SWGOverrideSettingItem]
 
 
 def list_swg_override_device_settings(

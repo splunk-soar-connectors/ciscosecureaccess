@@ -12,11 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
+
 from ..asset import Asset
-from ..outputs import GetDomainRiskScoreOutput
-from ..params import GetDomainParams
 from ..response_handling import require_mapping
 from ..sse_api_client import GET, investigate
+from .get_domain_status import GetDomainParams
+
+
+class DomainRiskIndicator(ActionOutput):
+    indicator: str | None = None
+    normalized_score: int | None = None
+    score: float | None = None
+
+
+class GetDomainRiskScoreOutput(ActionOutput):
+    risk_score: int | None = None
+    indicators: list[DomainRiskIndicator] | None = None
 
 
 def get_domain_risk_score(

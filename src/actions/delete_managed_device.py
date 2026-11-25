@@ -12,11 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.params import Param, Params
+
 from ..asset import Asset
-from ..outputs import DeleteManagedDeviceOutput
-from ..params import DeleteManagedDeviceParams
 from ..response_handling import require_mapping
 from ..sse_api_client import DELETE, deployments
+
+
+class DeleteManagedDeviceParams(Params):
+    origin_id: int = Param(
+        required=True,
+        description="Origin ID of the network device to remove (obtain from the List Managed Devices action).",
+    )
+
+
+class DeleteManagedDeviceOutput(ActionOutput):
+    success: bool = True
+    message: str | None = None
 
 
 def delete_managed_device(
@@ -28,7 +41,7 @@ def delete_managed_device(
     https://developer.cisco.com/docs/cloud-security/delete-network-device/
     """
     client = asset.get_client()
-    response = client.Query(
+    response = client.query(
         scope=deployments,
         end_point=f"networkdevices/{params.origin_id}",
         operation=DELETE,

@@ -12,11 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
 from soar_sdk.params import Params
 
 from ..asset import Asset
-from ..outputs import ListVPNSessionsOutput
 from ..sse_api_client import GET, admin
+
+
+class VPNSession(ActionOutput):
+    username: str | None = None
+    deviceName: str | None = None
+    assignedIp: str | None = None  # RFC 1918 IPv4 assigned to the VPN connection
+    assignedIpv6: str | None = None  # IPv6 assigned to the VPN session
+    publicIp: str | None = None
+    sessionId: str | None = None
+    loginTime: str | None = None
+    profileName: str | None = None
+
+
+class ListVPNSessionsOutput(ActionOutput):
+    vpn_sessions: list[VPNSession]
 
 
 def list_vpn_sessions(params: Params, asset: Asset) -> ListVPNSessionsOutput:
@@ -25,7 +40,7 @@ def list_vpn_sessions(params: Params, asset: Asset) -> ListVPNSessionsOutput:
     https://developer.cisco.com/docs/cloud-security/list-vpn-connections/
     """
     client = asset.get_client()
-    result = client.QueryAllPagesOffset(
+    result = client.query_all_pages_offset(
         scope=admin,
         end_point="vpn/userConnections",
         operation=GET,

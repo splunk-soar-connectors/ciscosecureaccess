@@ -16,10 +16,26 @@ import json
 
 from soar_sdk.action_results import MakeRequestOutput
 from soar_sdk.exceptions import ActionFailure
+from soar_sdk.params import MakeRequestParams, Param
 
 from ..asset import Asset
 from ..error_handling import format_action_error
-from ..params import CiscoSecureAccessMakeRequestParams
+
+
+class CiscoSecureAccessMakeRequestParams(MakeRequestParams):
+    endpoint: str = Param(
+        required=True,
+        description=(
+            "Cisco Secure Access API path, relative to the configured base URL. "
+            "For example: 'deployments/v2/networkdevices' or "
+            "'admin/v2/vpn/userConnections'. Do not include the base URL."
+        ),
+    )
+    verify_ssl: bool = Param(
+        required=False,
+        default=True,
+        description="Whether to verify the SSL certificate. Default true.",
+    )
 
 
 def _parse_make_request_json_object(value: str | None, param_name: str) -> dict | None:
@@ -81,7 +97,7 @@ def make_request(
 
     client = asset.get_client()
     try:
-        response = client.MakeRequest(
+        response = client.make_request(
             method=params.http_method,
             endpoint=endpoint,
             headers=headers,

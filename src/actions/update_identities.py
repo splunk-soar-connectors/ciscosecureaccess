@@ -12,13 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.params import Param, Params
+
 from ..asset import Asset
-from ..constants import MAX_IDENTITIES_UPDATE
+from ..constants import IDENTITY_TYPE_VALUES, MAX_IDENTITIES_UPDATE
 from ..input_helpers import _parse_json_param
-from ..outputs import UpdateIdentitiesOutput
-from ..params import UpdateIdentitiesParams
 from ..response_handling import require_mapping
 from ..sse_api_client import PUT, deployments
+
+
+class UpdateIdentitiesParams(Params):
+    type: str = Param(
+        required=True,
+        description="Identity type: 'device' for identity endpoints, 'securityGroupTag' for SGTs.",
+        value_list=IDENTITY_TYPE_VALUES,
+    )
+    identities_json: str = Param(
+        required=True,
+        description='JSON array of identity objects (1-250). Devices: {"key","label","status","authName"}. SGTs: {"key","label","status","tagId"}. status: "active"|"inactive".',
+    )
+
+
+class UpdateIdentitiesOutput(ActionOutput):
+    success: bool | None = None
 
 
 def update_identities(

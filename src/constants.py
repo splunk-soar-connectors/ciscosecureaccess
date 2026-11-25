@@ -24,3 +24,6 @@ _DESTINATION_CREATE_TYPES = frozenset({"domain", "url", "ipv4"})
 
 # Domain status code to human-readable description.
 DOMAIN_STATUS_DESCRIPTIONS = {-1: "Malicious", 1: "Benign", 0: "Unclassified"}
+
+# Identity types shared by list and update actions.
+IDENTITY_TYPE_VALUES = ["device", "securityGroupTag"]

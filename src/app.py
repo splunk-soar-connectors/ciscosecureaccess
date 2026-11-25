@@ -13,9 +13,11 @@
 # limitations under the License.
 
 from soar_sdk.app import App
+from soar_sdk.exceptions import ActionFailure
 
 from .actions import register_actions
-from .asset import Asset, test_connectivity
+from .asset import Asset
+from .error_handling import format_action_error
 
 
 def create_cisco_secure_access_soar_connector_app() -> App:
@@ -33,12 +35,21 @@ def create_cisco_secure_access_soar_connector_app() -> App:
         asset_cls=Asset,
     )
 
-    app.test_connectivity()(test_connectivity)
-    test_connectivity_action = app.get_actions()["test_connectivity"]
-    test_connectivity_action.meta.description = (
-        "Test OAuth authentication to Cisco Secure Access."
-    )
-    test_connectivity_action.meta.verbose = (
+    @app.test_connectivity()
+    def test_connectivity(asset: Asset) -> None:
+        """Test OAuth authentication to Cisco Secure Access."""
+        client = asset.get_client()
+        try:
+            token = client.get_token()
+        except Exception as exc:
+            raise ActionFailure(
+                format_action_error("Connectivity test failed", exc)
+            ) from exc
+        if not token:
+            raise ActionFailure("Unable to get auth token")
+
+    # The SDK hook derives description from the docstring but has no verbose argument.
+    test_connectivity.meta.verbose = (
         "Verifies that the configured asset can authenticate to Cisco Secure Access "
         "with OAuth credentials."
     )

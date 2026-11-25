@@ -12,11 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
 from soar_sdk.params import Params
 
 from ..asset import Asset
-from ..outputs import ListVirtualAppliancesOutput
 from ..sse_api_client import GET, deployments
+
+
+class VirtualAppliance(ActionOutput):
+    originId: int
+    name: str
+    isUpgradable: bool
+    health: str
+    type: str
+    stateUpdatedAt: str
+    siteId: int | None = None
+    createdAt: str | None = None
+    modifiedAt: str | None = None
+    # Flattened from API's `state` object
+    state_syncing: str | None = None
+    # Flattened from API's `settings` object
+    internalIPs: list[str] | None = None
+    externalIP: str | None = None
+    hostType: str | None = None
+    uptime: int | None = None
+    version: str | None = None
+    domains: list[str] | None = None
+    lastSyncTime: str | None = None
+
+
+class ListVirtualAppliancesOutput(ActionOutput):
+    virtualAppliances: list[VirtualAppliance]
 
 
 def list_virtual_appliances(
@@ -27,7 +53,7 @@ def list_virtual_appliances(
     https://developer.cisco.com/docs/cloud-security/list-virtual-appliances/
     """
     client = asset.get_client()
-    result = client.QueryAllPages(
+    result = client.query_all_pages(
         scope=deployments,
         end_point="virtualappliances",
         operation=GET,

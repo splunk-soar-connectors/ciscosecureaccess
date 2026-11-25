@@ -18,10 +18,11 @@ import pytest
 import requests
 from soar_sdk.exceptions import ActionFailure
 
-from src.actions.make_request import make_request
-from src.asset import test_connectivity as run_connectivity_test
+from src.actions.make_request import CiscoSecureAccessMakeRequestParams, make_request
+from src.app import app
 from src.error_handling import format_action_error, format_api_error
-from src.params import CiscoSecureAccessMakeRequestParams
+
+run_connectivity_test = app.get_actions()["test_connectivity"].__wrapped__
 
 
 def test_format_api_error_uses_api_message():
@@ -49,7 +50,7 @@ def test_format_api_error_preserves_generic_message():
 def test_connectivity_converts_client_errors_to_action_failure():
     """Convert connectivity client errors into action failures."""
     client = MagicMock()
-    client.GetToken.side_effect = RuntimeError("authentication failed")
+    client.get_token.side_effect = RuntimeError("authentication failed")
     asset = MagicMock()
     asset.get_client.return_value = client
 
@@ -62,7 +63,7 @@ def test_connectivity_converts_client_errors_to_action_failure():
 def test_connectivity_rejects_empty_token():
     """Reject connectivity checks that return an empty token."""
     client = MagicMock()
-    client.GetToken.return_value = None
+    client.get_token.return_value = None
     asset = MagicMock()
     asset.get_client.return_value = client
 

@@ -12,11 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.params import Param, Params
+
 from ..asset import Asset
-from ..output_helpers import _output_from_api_data
-from ..outputs import GetRoamingComputerOutput
-from ..params import GetRoamingComputerParams
+from ..response_handling import require_mapping
 from ..sse_api_client import GET, deployments
+
+
+class GetRoamingComputerParams(Params):
+    device_id: str = Param(
+        required=True,
+        description="The device ID (deviceId) of the roaming computer, e.g. AB00C7DCEC99D211.",
+    )
+
+
+class GetRoamingComputerOutput(ActionOutput):
+    """Posture/security status for a roaming computer (Get Roaming Computer API). Same required fields as RoamingComputer."""
+
+    originId: int
+    name: str
+    deviceId: str
+    type: str
+    status: str
+    swgStatus: str
+    lastSyncStatus: str
+    lastSyncSwgStatus: str
+    lastSync: str
+    appliedBundle: int
+    hasIpBlocking: bool
+    version: str
+    osVersion: str
+    osVersionName: str
+    anyconnectDeviceId: str | None = None
 
 
 def get_roaming_computer(
@@ -33,4 +61,5 @@ def get_roaming_computer(
         end_point=f"roamingcomputers/{params.device_id}",
         operation=GET,
     )
-    return _output_from_api_data(GetRoamingComputerOutput, data)
+    data = require_mapping(data, "GetRoamingComputerOutput output")
+    return GetRoamingComputerOutput(**data)

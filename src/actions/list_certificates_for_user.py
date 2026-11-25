@@ -12,11 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.params import Param, Params
+
 from ..asset import Asset
-from ..outputs import ListCertificatesForUserOutput
-from ..params import ListCertificatesForUserParams
 from ..response_handling import require_mapping
 from ..sse_api_client import GET, admin
+from .list_certificates_for_device import ZtnaCertificate
+
+
+class ListCertificatesForUserParams(Params):
+    user_id: str = Param(
+        required=True,
+        description="The ID of the user (ZTNA). Get all device certificates for this user.",
+    )
+
+
+class ZtnaDeviceCertificateInfo(ActionOutput):
+    """Device ID and its certificates (List Certificates for User)."""
+
+    deviceId: str | None = None
+    certificates: list[ZtnaCertificate] | None = None
+
+
+class ListCertificatesForUserOutput(ActionOutput):
+    userId: str | None = None
+    devices: list[ZtnaDeviceCertificateInfo] | None = None
 
 
 def list_certificates_for_user(

@@ -12,12 +12,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.params import Param, Params
+
 from ..asset import Asset
 from ..input_helpers import _parse_origin_ids
-from ..outputs import SetSWGOverrideDeviceSettingsOutput
-from ..params import SetSWGOverrideDeviceSettingsParams
-from ..output_helpers import _output_from_api_data
+from ..response_handling import require_mapping
 from ..sse_api_client import POST, deployments
+
+
+class SetSWGOverrideDeviceSettingsParams(Params):
+    """Parameters for Set SWG Override Device Settings. POST deployments/v2/deviceSettings/SWGEnabled/set. Requires deployments.devices.swg:write."""
+
+    value: str = Param(
+        required=True,
+        description="Enable (1) or disable (0) Secure Web Gateway for the devices.",
+        value_list=["0", "1"],
+    )
+    origin_ids: str = Param(
+        required=True,
+        description="Comma-separated origin IDs of devices (1-100). Devices must be registered as roaming computers.",
+    )
+
+
+class SWGDeviceSettingItem(ActionOutput):
+    """Per-device status from Set SWG Override Device Settings API."""
+
+    originId: int
+    code: int
+    message: str
+
+
+class SetSWGOverrideDeviceSettingsOutput(ActionOutput):
+    """Response from Set SWG Override Device Settings (POST deployments/v2/deviceSettings/SWGEnabled/set)."""
+
+    totalCount: int
+    successCount: int
+    failCount: int
+    items: list[SWGDeviceSettingItem]
+    value: str
 
 
 def set_swg_override_device_settings(
@@ -37,4 +70,5 @@ def set_swg_override_device_settings(
         operation=POST,
         request_data={"value": params.value, "originIds": origin_ids},
     )
-    return _output_from_api_data(SetSWGOverrideDeviceSettingsOutput, data)
+    data = require_mapping(data, "SetSWGOverrideDeviceSettingsOutput output")
+    return SetSWGOverrideDeviceSettingsOutput(**data)

@@ -12,12 +12,55 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.params import Param, Params
+
 from ..asset import Asset
 from ..constants import MAX_LIMIT_FIREWALL_RULES
 from ..input_helpers import _clamp_offset_limit, _parse_optional_filters
-from ..outputs import ListFirewallRulesOutput
-from ..params import ListFirewallRulesParams
 from ..sse_api_client import GET, _encode_filters, policies
+
+
+class ListFirewallRulesParams(Params):
+    offset: int = Param(
+        required=False,
+        default=0,
+        description="Index to start reading the collection (0-based). Default 0.",
+    )
+    limit: int = Param(
+        required=False,
+        default=10,
+        description="Number of rules per page. Max 1000. Default 10.",
+    )
+    rule_name: str = Param(
+        required=False,
+        description="Filter by rule name or substring (e.g. 'Allow all rule').",
+    )
+    filters: str = Param(
+        required=False,
+        description="Optional JSON object to filter rules by properties (ruleName, ruleDescription, ruleIsEnabled, ruleAction, ruleConditions, sources, destinations, etc.). Cannot combine ruleConditions with sources/destinations.",
+    )
+
+
+class FirewallRule(ActionOutput):
+    """Access rule from List Rules API. Required per schema: ruleId."""
+
+    ruleId: int
+    organizationId: int | None = None
+    ruleName: str | None = None
+    ruleDescription: str | None = None
+    ruleAction: str | None = None
+    rulePriority: int | None = None
+    ruleIsDefault: bool | None = None
+    ruleIsEnabled: bool | None = None
+    modifiedBy: str | None = None
+    modifiedAt: str | None = None
+    createdAt: str | None = None
+
+
+class ListFirewallRulesOutput(ActionOutput):
+    count: int | None = None
+    firewall_rules: list[FirewallRule] | None = None
 
 
 def list_firewall_rules(
