@@ -92,11 +92,11 @@ wheels = [
 
 [[package]]
 name = "certifi"
-version = "2026.1.4"
+version = "2026.11.20"
 source = { registry = "https://pypi.python.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e0/2d/a891ca51311197f6ad14a7ef42e2399f36cf2f9bd44752b3dc4eab60fdc5/certifi-2026.1.4.tar.gz", hash = "sha256:ac726dd470482006e014ad384921ed6438c457018f4b3d204aea4281258b2120", size = 154268, upload-time = "2026-01-04T02:42:41.825Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/51/33/4cd27639502f010084bcef7a2036391dd637439901341ce1a530f36f6e51/certifi-2026.11.20.tar.gz", hash = "sha256:af1cb240a8133f105aa52684a3a3258339d7f2fd0bd4e2812698ff5cf5588c4e", size = 128901, upload-time = "2026-11-20T23:37:49.522Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e6/ad/3cc14f097111b4de0040c83a525973216457bbeeb63739ef1ed275c1c021/certifi-2026.1.4-py3-none-any.whl", hash = "sha256:9943707519e4add1115f44c2bc244f782c0249876bf51b6599fee1ffbedd685c", size = 152900, upload-time = "2026-01-04T02:42:40.15Z" },
+    { url = "https://files.pythonhosted.org/packages/6d/39/5eec3296860b94ac20bb8ed807725b88f6adfab3f343df592afd975f5f86/certifi-2026.11.20-py3-none-any.whl", hash = "sha256:7422df25243767b9877031a2248cb14d09ddac9beee846f4cef3d5c9191d488f", size = 127913, upload-time = "2026-11-20T23:37:48.117Z" },
 ]
 
 [[package]]
@@ -172,7 +172,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'soarapps-test'", specifier = ">=4.0.0,<7" },
     { name = "pytest-xdist", marker = "extra == 'soarapps-test'", specifier = ">=3.0.0,<4" },
     { name = "requests-oauthlib", specifier = ">=2.0.0" },
-    { name = "splunk-soar-sdk", specifier = ">=7.1.2" },
+    { name = "splunk-soar-sdk", specifier = ">=7.3.1" },
 ]
 provides-extras = ["soarapps-test"]
 
@@ -443,11 +443,11 @@ wheels = [
 
 [[package]]
 name = "idna"
-version = "3.11"
+version = "3.20"
 source = { registry = "https://pypi.python.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6f/6d/0703ccc57f3a7233505399edb88de3cbd678da106337b9fcde432b65ed60/idna-3.11.tar.gz", hash = "sha256:795dafcc9c04ed0c1fb032c2aa73654d8e8c5023a7df64a53f39190ada629902", size = 194582, upload-time = "2025-10-12T14:55:20.501Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f5/08/8eea9d4b8302028f3abb2c0813953f7aec26d33b7a8960ed760e65ff29fa/idna-3.20.tar.gz", hash = "sha256:a7db850025b95ded1eae8a46181a1a6c56c92c96f0e2b005d9ff8dc0210cab44", size = 216463, upload-time = "2026-09-17T14:11:04.752Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0e/61/66938bbb5fc52dbdf84594873d5b51fb1f7c7794e9c0f5bd885f30bc507b/idna-3.11-py3-none-any.whl", hash = "sha256:771a87f49d9defaf64091e6e6fe9c18d4833f140bd19464795bc32d966ca37ea", size = 71008, upload-time = "2025-10-12T14:55:18.883Z" },
+    { url = "https://files.pythonhosted.org/packages/58/a2/bb081bab032533a855d44de1d56f8e8426114ff1ba5d1f07a438a0a654f8/idna-3.20-py3-none-any.whl", hash = "sha256:ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c", size = 69583, upload-time = "2026-09-17T14:11:03.168Z" },
 ]
 
 [[package]]
@@ -890,7 +890,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/48/75/bfa342a2ebfc9623b
 
 [[package]]
 name = "requests"
-version = "2.32.5"
+version = "2.34.2"
 source = { registry = "https://pypi.python.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -898,9 +898,9 @@ dependencies = [
     { name = "idna" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/74/b3ff8e6c8446842c3f5c837e9c3dfcfe2018ea6ecef224c710c85ef728f4/requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf", size = 134517, upload-time = "2025-08-18T20:46:02.573Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ac/c3/e2a2b89f2d3e2179abd6d00ebd70bff6273f37fb3e0cc209f48b39d00cbf/requests-2.34.2.tar.gz", hash = "sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed", size = 142856, upload-time = "2026-05-14T19:25:27.735Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1e/db/4254e3eabe8020b458f1a747140d32277ec7a271daf1d235b70dc0b4e6e3/requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6", size = 64738, upload-time = "2025-08-18T20:46:00.542Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl", hash = "sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0", size = 73075, upload-time = "2026-05-14T19:25:26.443Z" },
 ]
 
 [[package]]
@@ -985,7 +985,7 @@ wheels = [
 
 [[package]]
 name = "splunk-soar-sdk"
-version = "7.1.2"
+version = "7.3.1"
 source = { registry = "https://pypi.python.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -993,6 +993,7 @@ dependencies = [
     { name = "beautifulsoup4" },
     { name = "bleach" },
     { name = "build" },
+    { name = "certifi" },
     { name = "click" },
     { name = "cryptography" },
     { name = "distro" },
@@ -1001,6 +1002,7 @@ dependencies = [
     { name = "httpx" },
     { name = "httpx-retries" },
     { name = "humanize" },
+    { name = "idna" },
     { name = "jinja2" },
     { name = "joserfc" },
     { name = "packaging" },
@@ -1014,10 +1016,11 @@ dependencies = [
     { name = "toml" },
     { name = "tqdm" },
     { name = "typer" },
+    { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a5/eb/08b6583713fb4593751f1b06e4507964df42db9c9787d04e1d037f4db0ae/splunk_soar_sdk-7.1.2.tar.gz", hash = "sha256:38293b95a8a69ae42eb20ae3d54ca2389e4ebb17af6bd489fec2702e4bdfda01", size = 1046236, upload-time = "2026-11-04T19:38:00.174Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/25/64/aff6b00b5620abd311f06e0939dcf24e5521401caf867ecdaeafe0d0c52e/splunk_soar_sdk-7.3.1.tar.gz", hash = "sha256:52e6b91dc986c8428657302e729417d67eb337548bb2b711e684208607f81e38", size = 1118351, upload-time = "2026-11-24T15:36:04.025Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/34/4a/e23de10127483fe148f1e0858949a4611717714ba10659e8e95f27d50f82/splunk_soar_sdk-7.1.2-py3-none-any.whl", hash = "sha256:4252cbf8c8b2625b4c4318828f8d437feb0c5b8df3116a44a4057b6860300861", size = 233043, upload-time = "2026-11-04T19:37:58.528Z" },
+    { url = "https://files.pythonhosted.org/packages/b0/3a/6ea581e1783f4eab1079b1e9c63cf316ae3204533eb801d48a5ae8a8899e/splunk_soar_sdk-7.3.1-py3-none-any.whl", hash = "sha256:94a0bd71edd60ecff19f853c7eb256dec8d65c51ec900a076daeacaffba90fe8", size = 258743, upload-time = "2026-11-24T15:36:02.659Z" },
 ]
 
 [[package]]
@@ -1094,11 +1097,11 @@ wheels = [
 
 [[package]]
 name = "urllib3"
-version = "2.6.3"
+version = "2.8.0"
 source = { registry = "https://pypi.python.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c7/24/5f1b3bdffd70275f6661c76461e25f024d5a38a46f04aaca912426a2b1d3/urllib3-2.6.3.tar.gz", hash = "sha256:1b62b6884944a57dbe321509ab94fd4d3b307075e0c2eae991ac71ee15ad38ed", size = 435556, upload-time = "2026-01-07T16:24:43.925Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e3/05/b17359e1cefb4f909b5e40b1b90a496d987258916dbbf88e842c729f510e/urllib3-2.8.0.tar.gz", hash = "sha256:63bf2ead4c879426ebf22ef2a781eeb4aa3b4ae798a0435506f8687fd5bb9b63", size = 458972, upload-time = "2026-09-15T19:29:36.253Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/39/08/aaaad47bc4e9dc8c725e68f9d04865dbcb2052843ff09c97b08904852d84/urllib3-2.6.3-py3-none-any.whl", hash = "sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4", size = 131584, upload-time = "2026-01-07T16:24:42.685Z" },
+    { url = "https://files.pythonhosted.org/packages/92/9d/c4e665119135114480843e7ab388fa94d8480650450e6f8e26b70d323a4c/urllib3-2.8.0-py3-none-any.whl", hash = "sha256:0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3", size = 135717, upload-time = "2026-09-15T19:29:34.577Z" },
 ]
 
 [[package]]
